@@ -1,5 +1,7 @@
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Loader2 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../config/firebase';
 
 interface ImageUploadProps {
   value: string;
@@ -7,12 +9,47 @@ interface ImageUploadProps {
   label?: string;
 }
 
+async function compressAndUpload(file: File): Promise<string> {
+  // Step 1: compress with Canvas (max 800px, JPEG 0.7 quality)
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 800;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round((height * MAX) / width); width = MAX; }
+          else { width = Math.round((width * MAX) / height); height = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  // Step 2: dataURL → Blob → upload to Firebase Storage
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  const filename = `products/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+  const storageRef = ref(storage, filename);
+  await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
+  return getDownloadURL(storageRef);
+}
+
 export function ImageUpload({ value, onChange, label = 'Imagen' }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string>(value);
-  const [error, setError] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -22,64 +59,28 @@ export function ImageUpload({ value, onChange, label = 'Imagen' }: ImageUploadPr
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      
-      // Magia de compresión para celulares
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        const MAX_SIZE = 800; // Tamaño máximo en píxeles
-
-        // Calcular la nueva proporción sin deformar la foto
-        if (width > height) {
-          if (width > MAX_SIZE) {
-            height *= MAX_SIZE / width;
-            width = MAX_SIZE;
-          }
-        } else {
-          if (height > MAX_SIZE) {
-            width *= MAX_SIZE / height;
-            height = MAX_SIZE;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          // Dibujar la imagen redimensionada
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Convertir a JPEG con 70% de calidad para hacerla ultra liviana
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          
-          setPreview(compressedDataUrl);
-          onChange(compressedDataUrl);
-          setError('');
-        }
-      };
-      img.src = dataUrl;
-    };
-    
-    reader.readAsDataURL(file);
+    setUploading(true);
+    setError('');
+    try {
+      const url = await compressAndUpload(file);
+      onChange(url);
+    } catch (err) {
+      console.error('Error al subir imagen:', err);
+      setError('Error al subir la imagen. Revisá tu conexión o las reglas de Storage.');
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleUrlChange = (url: string) => {
     onChange(url);
-    setPreview(url);
   };
 
   const handleClear = () => {
     onChange('');
-    setPreview('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
@@ -108,22 +109,24 @@ export function ImageUpload({ value, onChange, label = 'Imagen' }: ImageUploadPr
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
             style={{
               border: '1px solid rgba(0,0,0,0.12)',
               padding: '11px 16px',
               background: 'transparent',
-              cursor: 'pointer',
-              color: '#6B8F71',
+              cursor: uploading ? 'not-allowed' : 'pointer',
+              color: uploading ? '#aaa' : '#6B8F71',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               fontSize: '0.68rem',
               letterSpacing: '0.1em',
+              opacity: uploading ? 0.7 : 1,
             }}
             className="uppercase hover:bg-black/5 transition-colors"
           >
-            <Upload size={14} />
-            Subir
+            {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+            {uploading ? 'Subiendo…' : 'Subir'}
           </button>
         </div>
 
@@ -136,47 +139,26 @@ export function ImageUpload({ value, onChange, label = 'Imagen' }: ImageUploadPr
         />
 
         {error && (
-          <div style={{
-            backgroundColor: 'rgba(192,57,43,0.1)',
-            border: '1px solid rgba(192,57,43,0.3)',
-            padding: '10px 14px',
-          }}>
+          <div style={{ backgroundColor: 'rgba(192,57,43,0.1)', border: '1px solid rgba(192,57,43,0.3)', padding: '10px 14px' }}>
             <p style={{ color: '#c0392b', fontSize: '0.75rem' }}>{error}</p>
           </div>
         )}
 
-        {preview && (
+        {value && !uploading && (
           <div className="relative inline-block" style={{ maxWidth: '200px' }}>
             <img
-              src={preview}
+              src={value}
               alt="Preview"
-              style={{
-                width: '100%',
-                height: 'auto',
-                display: 'block',
-                border: '1px solid rgba(0,0,0,0.08)',
-                borderRadius: '2px',
-                objectFit: 'contain',
-              }}
+              style={{ width: '100%', height: 'auto', display: 'block', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '2px', objectFit: 'contain' }}
             />
             <button
               type="button"
               onClick={handleClear}
               style={{
-                position: 'absolute',
-                top: '6px',
-                right: '6px',
-                backgroundColor: 'rgba(0,0,0,0.7)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '50%',
-                width: '24px',
-                height: '24px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 0,
+                position: 'absolute', top: '6px', right: '6px',
+                backgroundColor: 'rgba(0,0,0,0.7)', color: 'white', border: 'none',
+                borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
               }}
               className="hover:bg-black transition-colors"
             >

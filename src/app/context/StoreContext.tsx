@@ -18,6 +18,7 @@ import { db, auth } from '../config/firebase';
 export interface Variant {
   label: string;
   stock: number;
+  price?: number; // optional per-variant price override
 }
 
 export interface ColorVariant {
@@ -30,7 +31,10 @@ export interface Product {
   name: string;
   price: number;
   category: string;
+  /** Primary image (first of images[], kept for backwards compat) */
   image: string;
+  /** All product images */
+  images?: string[];
   description: string;
   variants?: Variant[];
   generalStock?: number;
@@ -38,9 +42,16 @@ export interface Product {
   colors?: ColorVariant[];
 }
 
-export interface CarouselSettings {
-  images: string[];
-}
+export const CATEGORIES = [
+  'Anillos',
+  'Cadenas',
+  'Pulseras',
+  'Dijes',
+  'Huggies',
+  'Abridores',
+  'Argollas',
+  'Conjuntos',
+] as const;
 
 export interface CartItem {
   productId: string;
@@ -82,6 +93,7 @@ interface StoreContextType {
   carouselImages: string[];
   updateCarouselImages: (images: string[]) => void;
   getAvailableStock: (productId: string, variant?: string) => number;
+  getEffectivePrice: (productId: string, variant?: string) => number;
   loading: boolean;
 }
 
@@ -92,6 +104,15 @@ export function hasStock(product: Product): boolean {
     return product.variants.some(v => v.stock > 0);
   }
   return (product.generalStock ?? 0) > 0;
+}
+
+/** Returns the price to use for this product/variant combo */
+export function getProductPrice(product: Product, variantLabel?: string): number {
+  if (variantLabel && product.variants) {
+    const v = product.variants.find(vr => vr.label === variantLabel);
+    if (v?.price != null && v.price > 0) return v.price;
+  }
+  return product.price;
 }
 
 function loadFromStorage<T>(key: string, fallback: T): T {
@@ -124,11 +145,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser({ email: firebaseUser.email!, role: 'admin' });
-      } else {
-        setUser(null);
-      }
+      if (firebaseUser) setUser({ email: firebaseUser.email!, role: 'admin' });
+      else setUser(null);
     });
     return () => unsubscribe();
   }, []);
@@ -161,43 +179,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const clientProducts = products.filter(p => p.active && hasStock(p));
 
   const addProduct = async (product: Omit<Product, 'id'>) => {
-    try {
-      await addDoc(collection(db, 'products'), product);
-    } catch (error) {
-      console.error('Error al agregar producto:', error);
-      throw error;
-    }
+    // Strip undefined fields before writing to Firestore
+    const clean = Object.fromEntries(
+      Object.entries(product).filter(([, v]) => v !== undefined)
+    );
+    await addDoc(collection(db, 'products'), clean);
   };
 
   const deleteProduct = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, 'products', id));
-    } catch (error) {
-      console.error('Error al eliminar producto:', error);
-      throw error;
-    }
+    await deleteDoc(doc(db, 'products', id));
   };
 
   const updateProduct = async (id: string, updates: Partial<Omit<Product, 'id'>>) => {
-    try {
-      await updateDoc(doc(db, 'products', id), updates as any);
-    } catch (error) {
-      console.error('Error al actualizar producto:', error);
-      throw error;
-    }
+    const clean = Object.fromEntries(
+      Object.entries(updates).filter(([, v]) => v !== undefined)
+    );
+    await updateDoc(doc(db, 'products', id), clean);
   };
 
   const toggleActive = async (id: string) => {
     const product = products.find(p => p.id === id);
-    if (product) {
-      await updateProduct(id, { active: !product.active });
-    }
+    if (product) await updateProduct(id, { active: !product.active });
   };
 
   const getAvailableStock = (productId: string, variant?: string): number => {
     const product = products.find(p => p.id === productId);
     if (!product) return 0;
-
     if (product.variants && product.variants.length > 0) {
       if (variant) {
         const v = product.variants.find(vr => vr.label === variant);
@@ -205,8 +212,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
       return product.variants.reduce((sum, v) => sum + v.stock, 0);
     }
-
     return product.generalStock ?? 0;
+  };
+
+  const getEffectivePrice = (productId: string, variant?: string): number => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return 0;
+    return getProductPrice(product, variant);
   };
 
   const addToCart = (productId: string, variant?: string): { success: boolean; message?: string } => {
@@ -214,10 +226,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!product) return { success: false, message: 'Producto no encontrado' };
 
     const availableStock = getAvailableStock(productId, variant);
-    const currentCartItem = cart.find(i => i.productId === productId && i.variant === variant);
-    const currentQuantity = currentCartItem?.quantity ?? 0;
+    const currentQty = cart.find(i => i.productId === productId && i.variant === variant)?.quantity ?? 0;
 
-    if (currentQuantity >= availableStock) {
+    if (currentQty >= availableStock) {
       return {
         success: false,
         message: `No hay más stock disponible de este producto${variant && variant !== 'Única' ? ` (${variant})` : ''}`,
@@ -228,9 +239,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const existing = prev.find(i => i.productId === productId && i.variant === variant);
       if (existing) {
         return prev.map(i =>
-          i.productId === productId && i.variant === variant
-            ? { ...i, quantity: i.quantity + 1 }
-            : i
+          i.productId === productId && i.variant === variant ? { ...i, quantity: i.quantity + 1 } : i
         );
       }
       return [...prev, { productId, quantity: 1, variant }];
@@ -244,31 +253,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   const updateQuantity = (productId: string, qty: number, variant?: string): { success: boolean; message?: string } => {
-    if (qty <= 0) {
-      removeFromCart(productId, variant);
-      return { success: true };
-    }
-
+    if (qty <= 0) { removeFromCart(productId, variant); return { success: true }; }
     const availableStock = getAvailableStock(productId, variant);
-
-    if (qty > availableStock) {
-      return { success: false, message: `Solo hay ${availableStock} unidades disponibles` };
-    }
-
+    if (qty > availableStock) return { success: false, message: `Solo hay ${availableStock} unidades disponibles` };
     setCart(prev => prev.map(i =>
-      i.productId === productId && i.variant === variant
-        ? { ...i, quantity: qty }
-        : i
+      i.productId === productId && i.variant === variant ? { ...i, quantity: qty } : i
     ));
-
     return { success: true };
   };
 
   const clearCart = () => setCart([]);
 
+  // Cart total uses per-variant price if set
   const cartTotal = cart.reduce((sum, item) => {
     const p = products.find(prod => prod.id === item.productId);
-    return sum + (p ? p.price * item.quantity : 0);
+    if (!p) return sum;
+    return sum + getProductPrice(p, item.variant) * item.quantity;
   }, 0);
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -277,19 +277,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       return { success: true, message: 'Bienvenido, Administrador' };
-    } catch (error: any) {
-      console.error('Error en login:', error);
+    } catch {
       return { success: false, message: 'Email o contraseña incorrectos' };
     }
   };
 
   const adminLogout = async () => {
-    try {
-      await firebaseSignOut(auth);
-      setCurrentView('home');
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
+    try { await firebaseSignOut(auth); setCurrentView('home'); }
+    catch (e) { console.error(e); }
   };
 
   const generateWhatsAppLink = () => {
@@ -298,16 +293,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const p = products.find(prod => prod.id === item.productId);
       if (!p) return '';
       const variantText = item.variant && item.variant !== 'Única' ? ` (${item.variant})` : '';
-      return `• ${item.quantity}x ${p.name}${variantText} - $${(p.price * item.quantity).toLocaleString('es-AR')}`;
+      const price = getProductPrice(p, item.variant);
+      return `• ${item.quantity}x ${p.name}${variantText} - $${(price * item.quantity).toLocaleString('es-AR')}`;
     }).filter(Boolean).join('\n');
 
     const message = `¡Hola SOLEM! Quiero hacer el siguiente pedido 🛍️\n\n*Pedido - Plata 925:*\n\n${lines}\n\n*TOTAL: $${cartTotal.toLocaleString('es-AR')}*\n\nPor favor confirmame disponibilidad. ¡Muchas gracias! ✨`;
     return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
   };
 
-  const updateCarouselImages = (images: string[]) => {
-    setCarouselImages(images);
-  };
+  const updateCarouselImages = (images: string[]) => setCarouselImages(images);
 
   return (
     <StoreContext.Provider value={{
@@ -316,7 +310,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       cartOpen, setCartOpen,
       currentView, setCurrentView, selectedCategory, setSelectedCategory,
       user, adminLogin, adminLogout, generateWhatsAppLink,
-      searchQuery, setSearchQuery, carouselImages, updateCarouselImages, getAvailableStock,
+      searchQuery, setSearchQuery, carouselImages, updateCarouselImages,
+      getAvailableStock, getEffectivePrice,
       loading,
     }}>
       {children}
