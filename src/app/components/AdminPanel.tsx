@@ -162,7 +162,7 @@ function AdminProductRow({ product, onEdit }: { product: Product; onEdit: (p: Pr
   return (
     <div style={{ backgroundColor: 'rgba(255,255,255,0.55)', border: '1px solid rgba(0,0,0,0.07)', marginBottom: '8px' }}>
       <div className="flex items-center gap-4 p-4">
-        <div className="flex-shrink-0 overflow-hidden" style={{ width: '60px', height: '60px', borderRadius: '1px' }}>
+        <div className="flex-shrink-0 overflow-hidden" style={{ width: '60px', height: '60px', borderRadius: '8px' }}>
           <img src={thumbUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
 
