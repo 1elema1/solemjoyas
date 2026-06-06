@@ -833,12 +833,16 @@ export function AdminPanel() {
 
           {/* Tabs */}
           <div style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }} className="flex gap-8 mb-10">
-            {([['list', `Productos (${products.length})`], ['add', 'Agregar producto'], ['home', 'Contenido Home'], ['carousel', 'Carrusel']] as const).map(([tab, label]) => (
+           {([['list', `Productos (${products.length})`], ['add', 'Agregar producto'], ['home', 'Contenido Home'], ['carousel', 'Carrusel']] as const).map(([tab, label]) => (
               <button
                 key={tab}
                 onClick={() => {
-                  if (tab !== 'edit') setActiveTab(tab);
-                  if (tab === 'list' || tab === 'add') cancelEdit();
+                  if (tab === 'list' || tab === 'add') {
+                    cancelEdit();
+                  }
+                  if (tab !== 'edit') {
+                    setActiveTab(tab);
+                  }
                 }}
                 style={{
                   fontSize: '0.68rem', letterSpacing: '0.15em',
