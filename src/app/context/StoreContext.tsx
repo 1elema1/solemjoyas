@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+   import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import {
   collection,
   doc,
@@ -149,9 +149,9 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 }
 
 const DEFAULT_CAROUSEL_IMAGES = [
-  'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800',
-  'https://images.unsplash.com/photo-1599643477877-530eb83abc8e?w=800',
-  'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=800',
+  '',
+  '',
+  '',
 ];
 
 const DEFAULT_HOME_CONTENT: HomeContent = {
@@ -186,7 +186,10 @@ const DEFAULT_HOME_CONTENT: HomeContent = {
 };
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(() => {
+  const cached = localStorage.getItem('solem_products_cache');
+  return cached ? JSON.parse(cached) : [];
+});
   const [cart, setCart] = useState<CartItem[]>(() => loadFromStorage('solem_cart_v2', []));
   const [user, setUser] = useState<User | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -197,10 +200,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     loadFromStorage('solem_carousel', DEFAULT_CAROUSEL_IMAGES)
   );
   const [loading, setLoading] = useState(true);
-  const [homeContent, setHomeContent] = useState<HomeContent>(DEFAULT_HOME_CONTENT);
-
-  
-  const isFullyLoaded = !loading && homeLoaded;
+  const [homeContent, setHomeContent] = useState<HomeContent>(() => {
+    const cached = localStorage.getItem('solem_home_cache');
+    return cached ? JSON.parse(cached) : DEFAULT_HOME_CONTENT;
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -212,54 +215,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Real-time sync from Firestore — no local mock fallback
   useEffect(() => {
-    setLoading(true);
-    const q = query(collection(db, 'products'));
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const productsData: Product[] = snapshot.docs.map(
-          (docSnap) => ({ id: docSnap.id, ...docSnap.data() } as Product)
-        );
-        setProducts(productsData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Error al cargar productos desde Firestore:', error);
-        setProducts([]);
-        setLoading(false);
-      }
+  const q = query(collection(db, 'products'));
+  
+  // Suscripción a Firebase
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const productsData: Product[] = snapshot.docs.map(
+      (docSnap) => ({ id: docSnap.id, ...docSnap.data() } as Product)
     );
-    return () => unsubscribe();
-  }, []);
+    setProducts(productsData);
+    setLoading(false);
+    // Guardamos en caché cada vez que Firebase actualice
+    localStorage.setItem('solem_products_cache', JSON.stringify(productsData));
+  });
+
+  return () => unsubscribe();
+}, []);
 
   useEffect(() => { localStorage.setItem('solem_cart_v2', JSON.stringify(cart)); }, [cart]);
   useEffect(() => { localStorage.setItem('solem_carousel', JSON.stringify(carouselImages)); }, [carouselImages]);
 
   // Sync homeContent from Firestore
-  const [homeLoaded, setHomeLoaded] = useState(false);
-
-  // Sync homeContent from Firestore
   useEffect(() => {
-    const homeDocRef = doc(db, 'settings', 'homeContent');
-    const unsubscribe = onSnapshot(
-      homeDocRef,
-      (docSnap) => {
-        if (docSnap.exists()) {
-          setHomeContent({ ...DEFAULT_HOME_CONTENT, ...docSnap.data() } as HomeContent);
-        } else {
-          setHomeContent(DEFAULT_HOME_CONTENT);
-        }
-        setHomeLoaded(true); // <--- Agregamos esto
-      },
-      (error) => {
-        console.error('Error al cargar contenido del home:', error);
-        setHomeContent(DEFAULT_HOME_CONTENT);
-      }
-    );
-    return () => unsubscribe();
-  }, []);
-
- 
+  const homeDocRef = doc(db, 'settings', 'homeContent');
+  const unsubscribe = onSnapshot(homeDocRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data() as HomeContent;
+      setHomeContent(data);
+      // Guardamos la última versión en el navegador
+      localStorage.setItem('solem_home_cache', JSON.stringify(data)); 
+    }
+  });
+  return () => unsubscribe();
+}, []);
 
   const clientProducts = products.filter(p => p.active && hasStock(p));
 
@@ -400,7 +387,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  
   return (
     <StoreContext.Provider value={{
       products, addProduct, deleteProduct, updateProduct, toggleActive, clientProducts,
@@ -410,9 +396,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       user, adminLogin, adminLogout, generateWhatsAppLink,
       searchQuery, setSearchQuery, carouselImages, updateCarouselImages,
       getAvailableStock, getEffectivePrice,
-      loading: !isFullyLoaded, 
-      homeContent,
-      updateHomeContent,
+      loading,
+      homeContent, updateHomeContent,
     }}>
       {children}
     </StoreContext.Provider>
