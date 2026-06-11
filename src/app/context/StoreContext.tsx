@@ -198,6 +198,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
   const [loading, setLoading] = useState(true);
   const [homeContent, setHomeContent] = useState<HomeContent>(DEFAULT_HOME_CONTENT);
+
+  
   const isFullyLoaded = !loading && homeLoaded;
 
   useEffect(() => {
@@ -257,7 +259,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const isFullyLoaded = !loading && homeLoaded;
+ 
 
   const clientProducts = products.filter(p => p.active && hasStock(p));
 
