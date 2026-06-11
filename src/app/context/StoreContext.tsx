@@ -149,13 +149,13 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 }
 
 const DEFAULT_CAROUSEL_IMAGES = [
-  'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800',
-  'https://images.unsplash.com/photo-1599643477877-530eb83abc8e?w=800',
-  'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=800',
+  '',
+  '',
+  '',
 ];
 
 const DEFAULT_HOME_CONTENT: HomeContent = {
-  heroImage: 'https://images.unsplash.com/photo-1589674781759-c21c37956a44?w=900&q=80',
+  heroImage: '',
   heroTagline: 'Plata 925',
   heroTitle: 'Joyas que brillan con calma.',
   heroDescription: 'Piezas únicas en plata 925, diseñadas y creadas a mano en Córdoba. Sutiles, atemporales, hechas para acompañarte.',
@@ -167,14 +167,14 @@ const DEFAULT_HOME_CONTENT: HomeContent = {
   categoriesTitle: 'Colecciones',
   categoriesSubtitle: 'Explorá nuestras categorías',
   categoryImages: {
-    Anillos: 'https://images.unsplash.com/photo-1589674781759-c21c37956a44?w=500&q=80',
-    Cadenas: 'https://images.unsplash.com/photo-1589128777073-263566ae5e4d?w=500&q=80',
-    Pulseras: 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?w=500&q=80',
-    Dijes: 'https://images.unsplash.com/photo-1511253819057-5408d4d70465?w=500&q=80',
-    Huggies: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=500&q=80',
-    Abridores: 'https://images.unsplash.com/photo-1693212793204-bcea856c75fe?w=500&q=80',
-    Argollas: 'https://images.unsplash.com/photo-1629224316810-9d8805b95e76?w=500&q=80',
-    Conjuntos: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=500&q=80',
+    Anillos: '',
+    Cadenas: '',
+    Pulseras: '',
+    Dijes: '',
+    Huggies: '',
+    Abridores: '',
+    Argollas: '',
+    Conjuntos: '',
   },
   carouselTitle: 'Inspiración',
   carouselSubtitle: 'Descubrí nuestras piezas',
