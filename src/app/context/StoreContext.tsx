@@ -198,7 +198,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
   const [loading, setLoading] = useState(true);
   const [homeContent, setHomeContent] = useState<HomeContent>(DEFAULT_HOME_CONTENT);
-  const isFullyLoaded = !loading && homeLoaded;
+ 
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -234,10 +234,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => { localStorage.setItem('solem_carousel', JSON.stringify(carouselImages)); }, [carouselImages]);
 
   // Sync homeContent from Firestore
-  const [homeLoaded, setHomeLoaded] = useState(false);
+  
 
   // Sync homeContent from Firestore
-  useEffect(() => {
+   useEffect(() => {
     const homeDocRef = doc(db, 'settings', 'homeContent');
     const unsubscribe = onSnapshot(
       homeDocRef,
@@ -247,7 +247,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         } else {
           setHomeContent(DEFAULT_HOME_CONTENT);
         }
-        setHomeLoaded(true); // <--- Agregamos esto
+      },
+    
       },
       (error) => {
         console.error('Error al cargar contenido del home:', error);
