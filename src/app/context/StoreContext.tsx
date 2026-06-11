@@ -197,7 +197,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     loadFromStorage('solem_carousel', DEFAULT_CAROUSEL_IMAGES)
   );
   const [loading, setLoading] = useState(true);
-  const [homeContent, setHomeContent] = useState<HomeContent>(DEFAULT_HOME_CONTENT);
+  const [homeContent, setHomeContent] = useState<HomeContent>(() => {
+  const cached = localStorage.getItem('solem_home_cache');
+  return cached ? JSON.parse(cached) : DEFAULT_HOME_CONTENT; // Solo usa DEFAULT si no hay NADA guardado
+});
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -234,23 +237,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Sync homeContent from Firestore
   useEffect(() => {
-    const homeDocRef = doc(db, 'settings', 'homeContent');
-    const unsubscribe = onSnapshot(
-      homeDocRef,
-      (docSnap) => {
-        if (docSnap.exists()) {
-          setHomeContent({ ...DEFAULT_HOME_CONTENT, ...docSnap.data() } as HomeContent);
-        } else {
-          setHomeContent(DEFAULT_HOME_CONTENT);
-        }
-      },
-      (error) => {
-        console.error('Error al cargar contenido del home:', error);
-        setHomeContent(DEFAULT_HOME_CONTENT);
-      }
-    );
-    return () => unsubscribe();
-  }, []);
+  const homeDocRef = doc(db, 'settings', 'homeContent');
+  const unsubscribe = onSnapshot(homeDocRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data() as HomeContent;
+      setHomeContent(data);
+      // Guardamos la última versión en el navegador
+      localStorage.setItem('solem_home_cache', JSON.stringify(data)); 
+    }
+  });
+  return () => unsubscribe();
+}, []);
 
   const clientProducts = products.filter(p => p.active && hasStock(p));
 
