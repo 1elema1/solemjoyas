@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ImageCarousel } from './ImageCarousel';
 
 export function Hero() {
   const { setCurrentView, setSelectedCategory, carouselImages, homeContent } = useStore();
+  
+  // Estado para controlar que las imágenes ya cargaron
+  const [imagesLoaded, setImagesLoaded] = useState(false);
 
   const goCategory = (cat: string) => { setSelectedCategory(cat); setCurrentView('products'); };
   const goAll = () => { setSelectedCategory(null); setCurrentView('products'); };
@@ -117,8 +121,12 @@ export function Hero() {
             <img
               src={homeContent.heroImage}
               alt="Joya SOLEM"
-              className="absolute inset-0 w-full h-full object-cover"
-              style={{ objectPosition: 'center center' }}
+              className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+              style={{ 
+                objectPosition: 'center center',
+                opacity: imagesLoaded ? 1 : 0 
+              }}
+              onLoad={() => setImagesLoaded(true)}
             />
             {/* Subtle tag */}
             <div
@@ -138,7 +146,13 @@ export function Hero() {
 
           {/* Mobile image */}
           <div className="md:hidden h-72 overflow-hidden">
-            <img src={homeContent.heroImage} alt="Joya SOLEM" className="w-full h-full object-cover" />
+            <img 
+              src={homeContent.heroImage} 
+              alt="Joya SOLEM" 
+              className="w-full h-full object-cover transition-opacity duration-500" 
+              style={{ opacity: imagesLoaded ? 1 : 0 }}
+              onLoad={() => setImagesLoaded(true)}
+            />
           </div>
         </div>
       </section>
@@ -172,7 +186,9 @@ export function Hero() {
               <img
                 src={homeContent.categoryImages[cat]}
                 alt={cat}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 transition-opacity duration-500"
+                style={{ opacity: imagesLoaded ? 1 : 0 }}
+                onLoad={() => setImagesLoaded(true)}
               />
               <div
                 style={{
