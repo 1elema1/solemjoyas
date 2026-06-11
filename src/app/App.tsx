@@ -29,7 +29,17 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 }
 
 function AppContent() {
-  const { currentView } = useStore();
+  function AppContent() {
+  const { currentView, loading } = useStore(); // Agregamos 'loading'
+
+  // Si está cargando desde Firebase, mostramos un spinner o pantalla de carga
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#F5F0E8' }}>
+         <p style={{ color: '#6B8F71', letterSpacing: '0.2em' }} className="uppercase">Cargando SOLEM...</p>
+      </div>
+    );
+  }
 
   return (
     <Routes>
@@ -39,22 +49,10 @@ function AppContent() {
           {currentView === 'products' && <ProductGrid />}
         </MainLayout>
       } />
-      <Route path="/products" element={
-        <MainLayout>
-          <ProductGrid />
-        </MainLayout>
-      } />
-      <Route path="/login" element={<AdminLogin />} />
-      <Route path="/admin" element={
-        <ProtectedRoute>
-          <MainLayout>
-            <AdminPanel />
-          </MainLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* ... resto de tus rutas ... */}
     </Routes>
   );
+}
 }
 
 export default function App() {
