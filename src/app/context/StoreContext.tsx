@@ -186,7 +186,10 @@ const DEFAULT_HOME_CONTENT: HomeContent = {
 };
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(() => loadFromStorage('solem_products_cache', []));
+  const [products, setProducts] = useState<Product[]>(() => {
+  const cached = localStorage.getItem('solem_products_cache');
+  return cached ? JSON.parse(cached) : [];
+});
   const [cart, setCart] = useState<CartItem[]>(() => loadFromStorage('solem_cart_v2', []));
   const [user, setUser] = useState<User | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -198,9 +201,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
   const [loading, setLoading] = useState(true);
   const [homeContent, setHomeContent] = useState<HomeContent>(() => {
-  const cached = localStorage.getItem('solem_home_cache');
-  return cached ? JSON.parse(cached) : DEFAULT_HOME_CONTENT; // Solo usa DEFAULT si no hay NADA guardado
-});
+    const cached = localStorage.getItem('solem_home_cache');
+    return cached ? JSON.parse(cached) : DEFAULT_HOME_CONTENT;
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
