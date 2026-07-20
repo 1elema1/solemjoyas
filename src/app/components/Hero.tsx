@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ImageCarousel } from './ImageCarousel';
 import { SmartImage } from './ui/SmartImage';
@@ -31,6 +32,17 @@ export function Hero() {
   };
 
   const titleParts = parseTitleParts(homeContent.heroTitle);
+
+  useEffect(() => {
+    if (homeContent.heroImage) {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = homeContent.heroImage;
+      document.head.appendChild(link);
+      return () => { document.head.removeChild(link); };
+    }
+  }, [homeContent.heroImage]);
 
   return (
     <div style={{ backgroundColor: '#F5F0E8' }}>

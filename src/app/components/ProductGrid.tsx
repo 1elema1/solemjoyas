@@ -210,7 +210,11 @@ function ProductDetailModal({ product, onClose }: { product: Product; onClose: (
   const cartVariant = noVariants ? undefined : selectedVariant;
 
   const handleAdd = () => {
-    if (!canAdd) return;
+    if (!canAdd) {
+      setErrorMsg('Por favor seleccioná una medida para continuar');
+      setTimeout(() => setErrorMsg(''), 3000);
+      return;
+    }
     setErrorMsg('');
     const result = addToCart(product.id, cartVariant);
     if (result.success) {
@@ -223,7 +227,11 @@ function ProductDetailModal({ product, onClose }: { product: Product; onClose: (
   };
 
   const handleBuyNow = () => {
-    if (!canAdd) return;
+    if (!canAdd) {
+      setErrorMsg('Por favor seleccioná una medida para continuar');
+      setTimeout(() => setErrorMsg(''), 3000);
+      return;
+    }
     setErrorMsg('');
     const result = addToCart(product.id, cartVariant);
     if (result.success) { onClose(); setCartOpen(true); }
@@ -334,12 +342,11 @@ function ProductDetailModal({ product, onClose }: { product: Product; onClose: (
             <div className="flex flex-col gap-3">
               <button
                 onClick={handleAdd}
-                disabled={!canAdd}
                 style={{
-                  backgroundColor: !canAdd ? '#e0e0e0' : added ? '#6B8F71' : '#1a1a1a',
-                  color: !canAdd ? '#aaa' : '#F5F0E8',
+                  backgroundColor: added ? '#6B8F71' : '#1a1a1a',
+                  color: '#F5F0E8',
                   fontSize: '0.68rem', letterSpacing: '0.2em', padding: '14px',
-                  cursor: !canAdd ? 'not-allowed' : 'pointer', transition: 'background-color 0.3s', border: 'none',
+                  cursor: 'pointer', transition: 'background-color 0.3s', border: 'none',
                 }}
                 className="uppercase flex items-center justify-center gap-2"
               >
@@ -349,12 +356,11 @@ function ProductDetailModal({ product, onClose }: { product: Product; onClose: (
 
               <button
                 onClick={handleBuyNow}
-                disabled={!canAdd}
                 style={{
-                  border: !canAdd ? '1px solid #e0e0e0' : '1px solid rgba(0,0,0,0.25)',
-                  color: !canAdd ? '#ccc' : '#1a1a1a',
+                  border: '1px solid rgba(0,0,0,0.25)',
+                  color: '#1a1a1a',
                   fontSize: '0.68rem', letterSpacing: '0.2em', padding: '14px',
-                  backgroundColor: 'transparent', cursor: !canAdd ? 'not-allowed' : 'pointer',
+                  backgroundColor: 'transparent', cursor: 'pointer',
                 }}
                 className="uppercase hover:bg-black/5 transition-colors"
               >
@@ -386,7 +392,10 @@ function ProductCard({ product }: { product: Product }) {
     else if (single) res = addToCart(product.id, product.variants![0].label);
     else { setDetail(true); return; }
 
-    if (res && !res.success) {
+    if (res && res.success) {
+      setAdded(true);
+      setTimeout(() => setAdded(false), 1500);
+    } else if (res && !res.success) {
       setDetail(true);
     }
   };
@@ -417,12 +426,12 @@ function ProductCard({ product }: { product: Product }) {
             className="opacity-0 group-hover:opacity-100 transition-all duration-300"
             style={{
               position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)',
-              backgroundColor: '#1a1a1a', color: '#F5F0E8',
+              backgroundColor: added ? '#6B8F71' : '#1a1a1a', color: '#F5F0E8',
               fontSize: '0.62rem', letterSpacing: '0.15em', padding: '10px 22px',
               whiteSpace: 'nowrap', border: 'none', zIndex: 20,
             }}
           >
-            {single || noVariants ? 'Agregar al carrito' : 'Seleccionar medida'}
+            {added ? '✓ Agregado' : single || noVariants ? 'Agregar al carrito' : 'Seleccionar medida'}
           </button>
         </div>
 
