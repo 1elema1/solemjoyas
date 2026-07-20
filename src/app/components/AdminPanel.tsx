@@ -662,9 +662,17 @@ function CarouselManager() {
   const [tempImages, setTempImages] = useState(carouselImages);
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    setTempImages(carouselImages);
+  }, [carouselImages]);
+
   const addImage = (url: string) => { if (url.trim()) setTempImages(prev => [...prev, url]); };
   const removeImage = (idx: number) => setTempImages(prev => prev.filter((_, i) => i !== idx));
-  const save = () => { updateCarouselImages(tempImages); setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  const save = async () => {
+    await updateCarouselImages(tempImages);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   return (
     <div>

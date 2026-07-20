@@ -1,6 +1,7 @@
 import { X, Minus, Plus, Trash2, MessageCircle, AlertCircle } from 'lucide-react';
-import { useStore } from '../context/StoreContext';
+import { useStore, getProductPrice } from '../context/StoreContext';
 import { useState } from 'react';
+import { SmartImage } from './ui/SmartImage';
 
 export function CartDrawer() {
   const {
@@ -110,6 +111,7 @@ export function CartDrawer() {
                 if (!product) return null;
                 const key = `${item.productId}-${item.variant ?? 'default'}`;
                 const showVariant = item.variant && item.variant !== 'Única';
+                const unitPrice = getProductPrice(product, item.variant);
                 return (
                   <div
                     key={key}
@@ -120,7 +122,7 @@ export function CartDrawer() {
                       className="flex-shrink-0 overflow-hidden"
                       style={{ width: '76px', height: '76px', borderRadius: '1px' }}
                     >
-                      <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                      <SmartImage src={product.image} alt={product.name} objectFit="cover" className="w-full h-full" />
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -133,7 +135,7 @@ export function CartDrawer() {
                         </p>
                       )}
                       <p style={{ color: '#6B8F71', fontSize: '0.82rem' }} className="mb-3">
-                        ${product.price.toLocaleString('es-AR')}
+                        ${unitPrice.toLocaleString('es-AR')}
                       </p>
 
                       <div className="flex items-center gap-3">
@@ -181,7 +183,7 @@ export function CartDrawer() {
                     </div>
 
                     <p style={{ color: '#1a1a1a', fontSize: '0.85rem', flexShrink: 0 }}>
-                      ${(product.price * item.quantity).toLocaleString('es-AR')}
+                      ${(unitPrice * item.quantity).toLocaleString('es-AR')}
                     </p>
                   </div>
                 );

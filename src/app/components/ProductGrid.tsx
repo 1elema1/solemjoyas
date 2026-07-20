@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingBag, X, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStore, Product, CATEGORIES, getProductPrice } from '../context/StoreContext';
+import { SmartImage } from './ui/SmartImage';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function hasVariants(product: Product): boolean {
@@ -23,10 +24,11 @@ function ImageCarousel({ images, alt }: { images: string[]; alt: string }) {
 
   if (images.length <= 1) {
     return (
-      <img
+      <SmartImage
         src={images[0]}
         alt={alt}
-        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+        objectFit="contain"
+        className="w-full h-full"
       />
     );
   }
@@ -36,10 +38,11 @@ function ImageCarousel({ images, alt }: { images: string[]; alt: string }) {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '280px' }}>
-      <img
+      <SmartImage
         src={images[idx]}
         alt={`${alt} ${idx + 1}`}
-        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+        objectFit="contain"
+        className="w-full h-full"
       />
 
       {/* Prev / Next */}
@@ -378,9 +381,14 @@ function ProductCard({ product }: { product: Product }) {
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (noVariants) addToCart(product.id);
-    else if (single) addToCart(product.id, product.variants![0].label);
-    else setDetail(true);
+    let res;
+    if (noVariants) res = addToCart(product.id);
+    else if (single) res = addToCart(product.id, product.variants![0].label);
+    else { setDetail(true); return; }
+
+    if (res && !res.success) {
+      setDetail(true);
+    }
   };
 
   return (
@@ -388,19 +396,19 @@ function ProductCard({ product }: { product: Product }) {
       <div className="group cursor-pointer" onClick={() => setDetail(true)}>
         <div
           className="relative overflow-hidden mb-4"
-          style={{ borderRadius: '1px' }}
+          style={{ borderRadius: '1px', aspectRatio: '1' }}
           onMouseEnter={() => setHoverImg(true)}
           onMouseLeave={() => setHoverImg(false)}
         >
-          <img
+          <SmartImage
             src={hoverImg && hasSecondImage ? imgs[1] : imgs[0]}
             alt={product.name}
-            style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain', transition: 'opacity 0.35s' }}
-            className="transition-transform duration-700 group-hover:scale-105"
+            objectFit="cover"
+            className="w-full h-full transition-transform duration-700 group-hover:scale-105"
           />
 
           <div
-            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0)', transition: 'background 0.3s' }}
+            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0)', transition: 'background 0.3s', zIndex: 10 }}
             className="group-hover:bg-black/10"
           />
 
@@ -411,7 +419,7 @@ function ProductCard({ product }: { product: Product }) {
               position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)',
               backgroundColor: '#1a1a1a', color: '#F5F0E8',
               fontSize: '0.62rem', letterSpacing: '0.15em', padding: '10px 22px',
-              whiteSpace: 'nowrap', border: 'none',
+              whiteSpace: 'nowrap', border: 'none', zIndex: 20,
             }}
           >
             {single || noVariants ? 'Agregar al carrito' : 'Seleccionar medida'}

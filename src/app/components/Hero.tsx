@@ -1,12 +1,9 @@
-import { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ImageCarousel } from './ImageCarousel';
+import { SmartImage } from './ui/SmartImage';
 
 export function Hero() {
   const { setCurrentView, setSelectedCategory, carouselImages, homeContent } = useStore();
-  
-  // Estado para controlar que las imágenes ya cargaron
-  const [imagesLoaded, setImagesLoaded] = useState(false);
 
   const goCategory = (cat: string) => { setSelectedCategory(cat); setCurrentView('products'); };
   const goAll = () => { setSelectedCategory(null); setCurrentView('products'); };
@@ -94,6 +91,7 @@ export function Hero() {
                   letterSpacing: '0.2em',
                   padding: '15px 32px',
                   border: 'none',
+                  cursor: 'pointer',
                 }}
                 className="uppercase hover:bg-black/80 transition-colors"
               >
@@ -108,6 +106,7 @@ export function Hero() {
                   letterSpacing: '0.2em',
                   padding: '15px 32px',
                   backgroundColor: 'transparent',
+                  cursor: 'pointer',
                 }}
                 className="uppercase hover:bg-black/5 transition-colors"
               >
@@ -118,15 +117,12 @@ export function Hero() {
 
           {/* Right — image, exactly 50% */}
           <div className="relative hidden md:block" style={{ overflow: 'hidden' }}>
-            <img
+            <SmartImage
               src={homeContent.heroImage}
               alt="Joya SOLEM"
-              className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
-              style={{ 
-                objectPosition: 'center center',
-                opacity: imagesLoaded ? 1 : 0 
-              }}
-              onLoad={() => setImagesLoaded(true)}
+              priority={true}
+              className="absolute inset-0 w-full h-full"
+              style={{ objectPosition: 'center center' }}
             />
             {/* Subtle tag */}
             <div
@@ -137,6 +133,7 @@ export function Hero() {
                 backgroundColor: 'rgba(245,240,232,0.92)',
                 padding: '14px 20px',
                 backdropFilter: 'blur(8px)',
+                zIndex: 20,
               }}
             >
               <p style={{ color: '#6B8F71', fontSize: '0.6rem', letterSpacing: '0.22em' }} className="uppercase mb-1">{homeContent.heroNewCollectionTag}</p>
@@ -146,12 +143,11 @@ export function Hero() {
 
           {/* Mobile image */}
           <div className="md:hidden h-72 overflow-hidden">
-            <img 
-              src={homeContent.heroImage} 
-              alt="Joya SOLEM" 
-              className="w-full h-full object-cover transition-opacity duration-500" 
-              style={{ opacity: imagesLoaded ? 1 : 0 }}
-              onLoad={() => setImagesLoaded(true)}
+            <SmartImage
+              src={homeContent.heroImage}
+              alt="Joya SOLEM"
+              priority={true}
+              className="w-full h-full"
             />
           </div>
         </div>
@@ -180,15 +176,13 @@ export function Hero() {
             <button
               key={cat}
               onClick={() => goCategory(cat)}
-              className="group relative overflow-hidden"
-              style={{ aspectRatio: '1', borderRadius: '1px' }}
+              className="group relative overflow-hidden text-left"
+              style={{ aspectRatio: '1', borderRadius: '1px', border: 'none', padding: 0, cursor: 'pointer' }}
             >
-              <img
+              <SmartImage
                 src={homeContent.categoryImages[cat]}
                 alt={cat}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 transition-opacity duration-500"
-                style={{ opacity: imagesLoaded ? 1 : 0 }}
-                onLoad={() => setImagesLoaded(true)}
+                className="w-full h-full transition-transform duration-700 group-hover:scale-105"
               />
               <div
                 style={{
@@ -196,6 +190,7 @@ export function Hero() {
                   inset: 0,
                   background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.05) 55%, transparent 100%)',
                   transition: 'opacity 0.3s',
+                  zIndex: 15,
                 }}
               />
               <p
@@ -207,6 +202,7 @@ export function Hero() {
                   fontSize: '0.68rem',
                   letterSpacing: '0.2em',
                   fontWeight: 500,
+                  zIndex: 20,
                 }}
                 className="uppercase"
               >
@@ -218,7 +214,7 @@ export function Hero() {
           <button
             onClick={goAll}
             className="group relative overflow-hidden flex items-center justify-center"
-            style={{ aspectRatio: '1', backgroundColor: '#1a1a1a', borderRadius: '1px' }}
+            style={{ aspectRatio: '1', backgroundColor: '#1a1a1a', borderRadius: '1px', border: 'none', cursor: 'pointer' }}
           >
             <div className="text-center">
               <div style={{ color: '#6B8F71', fontSize: '2.2rem', marginBottom: '10px', lineHeight: 1 }}>✦</div>
