@@ -379,6 +379,7 @@ function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useStore();
   const [detail, setDetail] = useState(false);
   const [hoverImg, setHoverImg] = useState(false);
+  const [added, setAdded] = useState(false);
 
   const single = isSingleVariant(product);
   const noVariants = !hasVariants(product);
