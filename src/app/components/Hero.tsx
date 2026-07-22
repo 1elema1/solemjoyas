@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ImageCarousel } from './ImageCarousel';
 import { SmartImage } from './ui/SmartImage';
@@ -31,7 +31,7 @@ export function Hero() {
     return parts;
   };
 
-  const titleParts = parseTitleParts(homeContent.heroTitle);
+  const titleParts = useMemo(() => parseTitleParts(homeContent.heroTitle), [homeContent.heroTitle]);
 
   useEffect(() => {
     if (homeContent.heroImage) {

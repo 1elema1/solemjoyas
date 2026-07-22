@@ -387,7 +387,7 @@ function HomeContentManager() {
         ].map(({ id, label }) => (
           <button
             key={id}
-            onClick={() => setActiveSection(id as any)}
+            onClick={() => setActiveSection(id as 'hero' | 'categories' | 'footer')}
             style={{
               fontSize: '0.68rem', letterSpacing: '0.12em',
               color: activeSection === id ? '#6B8F71' : '#888',
@@ -697,6 +697,18 @@ function CarouselManager() {
   );
 }
 
+// Constante fuera del componente para evitar recreación en cada render
+const EMPTY_FORM = {
+  name: '',
+  price: '',
+  category: 'Anillos' as string,
+  images: [] as string[],
+  description: '',
+  variants: [] as Variant[],
+  colors: [] as ColorVariant[],
+  generalStock: '10',
+};
+
 // ── Main AdminPanel ───────────────────────────────────────────────────────────
 export function AdminPanel() {
   const navigate = useNavigate();
@@ -706,18 +718,7 @@ export function AdminPanel() {
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-
-  const emptyForm = {
-    name: '',
-    price: '',
-    category: 'Anillos' as string,
-    images: [] as string[],
-    description: '',
-    variants: [] as Variant[],
-    colors: [] as ColorVariant[],
-    generalStock: '10',
-  };
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const startEdit = (product: Product) => {
     setEditingProduct(product);
@@ -735,11 +736,16 @@ export function AdminPanel() {
     setError('');
   };
 
-  const cancelEdit = () => {
+  // Solo limpia el producto en edición, no cambia de tab
+  const resetForm = () => {
     setEditingProduct(null);
-    setForm(emptyForm);
-    setActiveTab('list');
+    setForm(EMPTY_FORM);
     setError('');
+  };
+
+  const cancelEdit = () => {
+    resetForm();
+    setActiveTab('list');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -789,7 +795,7 @@ export function AdminPanel() {
       } else {
         await addProduct(baseData as Omit<Product, 'id'>);
         setToast(`"${form.name}" publicado exitosamente`);
-        setForm(emptyForm);
+        resetForm();
         setActiveTab('list');
       }
     } catch (err) {
@@ -845,8 +851,11 @@ export function AdminPanel() {
               <button
                 key={tab}
                 onClick={() => {
-                  if (tab !== 'edit') setActiveTab(tab);
-                  if (tab === 'list' || tab === 'add') cancelEdit();
+                  // Al ir a 'list' limpiamos formulario y edición.
+                  // Al ir a 'add', solo reseteamos el form sin volver a list.
+                  if (tab === 'list') { cancelEdit(); return; }
+                  if (tab === 'add') { resetForm(); }
+                  setActiveTab(tab);
                 }}
                 style={{
                   fontSize: '0.68rem', letterSpacing: '0.15em',
@@ -911,12 +920,16 @@ export function AdminPanel() {
           {/* ── Add / Edit product form ── */}
           {(activeTab === 'add' || activeTab === 'edit') && (
             <form onSubmit={handleSubmit} className="max-w-xl flex flex-col gap-6">
-              {activeTab === 'edit' && (
+              {activeTab === 'edit' ? (
                 <div className="flex items-center justify-between mb-2">
                   <p style={{ color: '#6B8F71', fontSize: '0.85rem' }}>Editando: {editingProduct?.name}</p>
                   <button type="button" onClick={cancelEdit} style={{ color: '#888', fontSize: '0.68rem', letterSpacing: '0.12em', background: 'none', border: 'none', cursor: 'pointer' }} className="uppercase hover:opacity-60">
                     Cancelar
                   </button>
+                </div>
+              ) : (
+                <div className="mb-2">
+                  <p style={{ color: '#6B8F71', fontSize: '0.68rem', letterSpacing: '0.2em' }} className="uppercase">Nuevo producto</p>
                 </div>
               )}
 

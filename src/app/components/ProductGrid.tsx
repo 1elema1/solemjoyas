@@ -375,7 +375,7 @@ function ProductDetailModal({ product, onClose }: { product: Product; onClose: (
 }
 
 // ── Product card ──────────────────────────────────────────────────────────────
-function ProductCard({ product }: { product: Product }) {
+function ProductCard({ product, priority }: { product: Product; priority?: boolean }) {
   const { addToCart } = useStore();
   const [detail, setDetail] = useState(false);
   const [hoverImg, setHoverImg] = useState(false);
@@ -414,6 +414,7 @@ function ProductCard({ product }: { product: Product }) {
             src={hoverImg && hasSecondImage ? imgs[1] : imgs[0]}
             alt={product.name}
             objectFit="cover"
+            priority={priority}
             className="w-full h-full transition-transform duration-700 group-hover:scale-105"
           />
 
@@ -528,8 +529,8 @@ export function ProductGrid() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
-            {filtered.map(product => (
-              <ProductCard key={product.id} product={product} />
+            {filtered.map((product, idx) => (
+              <ProductCard key={product.id} product={product} priority={idx < 4} />
             ))}
           </div>
         )}

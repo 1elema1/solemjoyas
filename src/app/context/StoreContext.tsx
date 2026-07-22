@@ -1,4 +1,4 @@
-   import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import {
   collection,
   doc,
@@ -18,7 +18,7 @@ import { db, auth } from '../config/firebase';
 export interface Variant {
   label: string;
   stock: number;
-  price?: number; // optional per-variant price override
+  price?: number;
 }
 
 export interface ColorVariant {
@@ -114,9 +114,8 @@ interface StoreContextType {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   carouselImages: string[];
-  updateCarouselImages: (images: string[]) => void;
+  updateCarouselImages: (images: string[]) => Promise<void>;
   getAvailableStock: (productId: string, variant?: string) => number;
-  getEffectivePrice: (productId: string, variant?: string) => number;
   loading: boolean;
   homeContent: HomeContent;
   updateHomeContent: (content: Partial<HomeContent>) => Promise<void>;
@@ -149,20 +148,18 @@ function loadFromStorage<T>(key: string, fallback: T): T {
   }
 }
 
-const DEFAULT_CAROUSEL_IMAGES: string[] = [];
-
 const DEFAULT_HOME_CONTENT: HomeContent = {
   heroImage: '',
   heroTagline: 'Plata 925',
   heroTitle: 'Joyas que brillan con calma.',
-  heroDescription: 'Piezas únicas en plata 925, diseñadas y creadas a mano en Córdoba. Sutiles, atemporales, hechas para acompañarte.',
-  heroButton1Text: 'Explorar tienda →',
+  heroDescription: 'Piezas Ãºnicas en plata 925, diseÃ±adas y creadas a mano en CÃ³rdoba. Sutiles, atemporales, hechas para acompaÃ±arte.',
+  heroButton1Text: 'Explorar tienda â†’',
   heroButton2Text: 'Ver cadenas',
   heroButton2Category: 'Cadenas',
-  heroNewCollectionTag: 'Nueva colección',
+  heroNewCollectionTag: 'Nueva colecciÃ³n',
   heroNewCollectionText: 'Joyas para siempre',
   categoriesTitle: 'Colecciones',
-  categoriesSubtitle: 'Explorá nuestras categorías',
+  categoriesSubtitle: 'ExplorÃ¡ nuestras categorÃ­as',
   categoryImages: {
     Anillos: '',
     Cadenas: '',
@@ -173,41 +170,25 @@ const DEFAULT_HOME_CONTENT: HomeContent = {
     Argollas: '',
     Conjuntos: '',
   },
-  carouselTitle: 'Inspiración',
-  carouselSubtitle: 'Descubrí nuestras piezas',
+  carouselTitle: 'InspiraciÃ³n',
+  carouselSubtitle: 'DescubrÃ­ nuestras piezas',
   carouselImages: [],
-  footerLocation: 'Ubicados en\nCórdoba Capital',
-  footerShipping: 'Realizamos envíos\nmediante Uber Envíos',
+  footerLocation: 'Ubicados en\nCÃ³rdoba Capital',
+  footerShipping: 'Realizamos envÃ­os\nmediante Uber EnvÃ­os',
   footerMaterial: 'Plata 925\ncertificada y garantizada',
-  footerOrders: 'Coordinados por WhatsApp\nSin pagos en línea',
-  footerCopyright: '© 2025 SOLEM · Todos los derechos reservados',
+  footerOrders: 'Coordinados por WhatsApp\nSin pagos en lÃ­nea',
+  footerCopyright: 'Â© 2025 SOLEM Â· Todos los derechos reservados',
 };
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(() => {
-    const cached = localStorage.getItem('solem_products_cache');
-    return cached ? JSON.parse(cached) : [];
-  });
+  const [products, setProducts] = useState<Product[]>(() => loadFromStorage('solem_products_cache', []));
   const [cart, setCart] = useState<CartItem[]>(() => loadFromStorage('solem_cart_v2', []));
   const [user, setUser] = useState<User | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'home' | 'products' | 'admin'>('home');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [homeContent, setHomeContent] = useState<HomeContent>(() => {
-    const cached = localStorage.getItem('solem_home_cache');
-    return cached ? JSON.parse(cached) : DEFAULT_HOME_CONTENT;
-  });
-  const [carouselImages, setCarouselImages] = useState<string[]>(() => {
-    const cachedHome = localStorage.getItem('solem_home_cache');
-    if (cachedHome) {
-      try {
-        const parsed = JSON.parse(cachedHome);
-        if (parsed.carouselImages && Array.isArray(parsed.carouselImages)) return parsed.carouselImages;
-      } catch {}
-    }
-    return loadFromStorage('solem_carousel', DEFAULT_CAROUSEL_IMAGES);
-  });
+  const [homeContent, setHomeContent] = useState<HomeContent>(() => loadFromStorage('solem_home_cache', DEFAULT_HOME_CONTENT));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -218,48 +199,56 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  // Real-time sync from Firestore — no local mock fallback
+  // Real-time sync de productos desde Firestore con cachÃ© local
   useEffect(() => {
     const q = query(collection(db, 'products'));
-    
-    // Suscripción a Firebase
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const productsData: Product[] = snapshot.docs.map(
         (docSnap) => ({ id: docSnap.id, ...docSnap.data() } as Product)
       );
       setProducts(productsData);
       setLoading(false);
-      // Guardamos en caché cada vez que Firebase actualice
       localStorage.setItem('solem_products_cache', JSON.stringify(productsData));
     });
-
     return () => unsubscribe();
   }, []);
 
   useEffect(() => { localStorage.setItem('solem_cart_v2', JSON.stringify(cart)); }, [cart]);
-  useEffect(() => { localStorage.setItem('solem_carousel', JSON.stringify(carouselImages)); }, [carouselImages]);
 
-  // Sync homeContent from Firestore
+  // Sync homeContent desde Firestore (fuente Ãºnica de verdad, incluye carouselImages)
   useEffect(() => {
     const homeDocRef = doc(db, 'settings', 'homeContent');
     const unsubscribe = onSnapshot(homeDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as HomeContent;
         setHomeContent(data);
-        if (data.carouselImages && Array.isArray(data.carouselImages)) {
-          setCarouselImages(data.carouselImages);
-        }
-        // Guardamos la última versión en el navegador
-        localStorage.setItem('solem_home_cache', JSON.stringify(data)); 
+        localStorage.setItem('solem_home_cache', JSON.stringify(data));
       }
     });
     return () => unsubscribe();
   }, []);
 
-  const clientProducts = products.filter(p => p.active && hasStock(p));
+  // carouselImages derivado de homeContent â€” sin estado duplicado
+  const carouselImages = useMemo(
+    () => homeContent.carouselImages ?? [],
+    [homeContent.carouselImages]
+  );
+
+  // Derivados memoizados para evitar recÃ¡lculo en cada render
+  const clientProducts = useMemo(
+    () => products.filter(p => p.active && hasStock(p)),
+    [products]
+  );
+
+  const cartTotal = useMemo(() => cart.reduce((sum, item) => {
+    const p = products.find(prod => prod.id === item.productId);
+    if (!p) return sum;
+    return sum + getProductPrice(p, item.variant) * item.quantity;
+  }, 0), [cart, products]);
+
+  const cartCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
 
   const addProduct = async (product: Omit<Product, 'id'>) => {
-    // Strip undefined fields before writing to Firestore
     const clean = Object.fromEntries(
       Object.entries(product).filter(([, v]) => v !== undefined)
     );
@@ -295,12 +284,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return product.generalStock ?? 0;
   };
 
-  const getEffectivePrice = (productId: string, variant?: string): number => {
-    const product = products.find(p => p.id === productId);
-    if (!product) return 0;
-    return getProductPrice(product, variant);
-  };
-
   const addToCart = (productId: string, variant?: string): { success: boolean; message?: string } => {
     const product = products.find(p => p.id === productId);
     if (!product) return { success: false, message: 'Producto no encontrado' };
@@ -311,7 +294,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (currentQty >= availableStock) {
       return {
         success: false,
-        message: `No hay más stock disponible de este producto${variant && variant !== 'Única' ? ` (${variant})` : ''}`,
+        message: `No hay mÃ¡s stock disponible de este producto${variant && variant !== 'Ãšnica' ? ` (${variant})` : ''}`,
       };
     }
 
@@ -344,27 +327,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => setCart([]);
 
-  // Cart total uses per-variant price if set
-  const cartTotal = cart.reduce((sum, item) => {
-    const p = products.find(prod => prod.id === item.productId);
-    if (!p) return sum;
-    return sum + getProductPrice(p, item.variant) * item.quantity;
-  }, 0);
-
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-
   const adminLogin = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       return { success: true, message: 'Bienvenido, Administrador' };
     } catch {
-      return { success: false, message: 'Email o contraseña incorrectos' };
+      return { success: false, message: 'Email o contraseÃ±a incorrectos' };
     }
   };
 
   const adminLogout = async () => {
     try { await firebaseSignOut(auth); setCurrentView('home'); }
-    catch (e) { console.error(e); }
+    catch { /* silencioso */ }
   };
 
   const generateWhatsAppLink = () => {
@@ -372,18 +346,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const lines = cart.map(item => {
       const p = products.find(prod => prod.id === item.productId);
       if (!p) return '';
-      const variantText = item.variant && item.variant !== 'Única' ? ` (${item.variant})` : '';
+      const variantText = item.variant && item.variant !== 'Ãšnica' ? ` (${item.variant})` : '';
       const price = getProductPrice(p, item.variant);
-      return `• ${item.quantity}x ${p.name}${variantText} - $${(price * item.quantity).toLocaleString('es-AR')}`;
+      return `â€¢ ${item.quantity}x ${p.name}${variantText} - $${(price * item.quantity).toLocaleString('es-AR')}`;
     }).filter(Boolean).join('\n');
 
-    const message = `¡Hola SOLEM! Quiero hacer el siguiente pedido 🛍️\n\n*Pedido - Plata 925:*\n\n${lines}\n\n*TOTAL: $${cartTotal.toLocaleString('es-AR')}*\n\nPor favor confirmame disponibilidad. ¡Muchas gracias! ✨`;
+    const message = `Â¡Hola SOLEM! Quiero hacer el siguiente pedido ðŸ›ï¸\n\n*Pedido - Plata 925:*\n\n${lines}\n\n*TOTAL: $${cartTotal.toLocaleString('es-AR')}*\n\nPor favor confirmame disponibilidad. Â¡Muchas gracias! âœ¨`;
     return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
   };
 
   const updateCarouselImages = async (images: string[]) => {
     const validImages = images.filter(img => img && img.trim() !== '');
-    setCarouselImages(validImages);
     await updateHomeContent({ carouselImages: validImages });
   };
 
@@ -393,24 +366,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       Object.entries(updates).filter(([, v]) => v !== undefined)
     );
     await updateDoc(homeDocRef, clean).catch(async () => {
-      // If doc doesn't exist, create it with setDoc
       const { setDoc } = await import('firebase/firestore');
       await setDoc(homeDocRef, { ...DEFAULT_HOME_CONTENT, ...clean });
     });
   };
 
+  // useMemo en el value evita que todos los consumidores re-rendericen
+  // cuando cambia un estado no relacionado (ej: cartOpen no afecta a ProductGrid)
+  const value = useMemo<StoreContextType>(() => ({
+    products, addProduct, deleteProduct, updateProduct, toggleActive, clientProducts,
+    cart, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount,
+    cartOpen, setCartOpen,
+    currentView, setCurrentView, selectedCategory, setSelectedCategory,
+    user, adminLogin, adminLogout, generateWhatsAppLink,
+    searchQuery, setSearchQuery, carouselImages, updateCarouselImages,
+    getAvailableStock,
+    loading,
+    homeContent, updateHomeContent,
+  // Las funciones no cambian entre renders (son definidas en scope del provider)
+  // Solo los valores de estado son dependencies reales
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [
+    products, clientProducts, cart, cartTotal, cartCount,
+    cartOpen, currentView, selectedCategory,
+    user, searchQuery, carouselImages, loading, homeContent,
+  ]);
+
   return (
-    <StoreContext.Provider value={{
-      products, addProduct, deleteProduct, updateProduct, toggleActive, clientProducts,
-      cart, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount,
-      cartOpen, setCartOpen,
-      currentView, setCurrentView, selectedCategory, setSelectedCategory,
-      user, adminLogin, adminLogout, generateWhatsAppLink,
-      searchQuery, setSearchQuery, carouselImages, updateCarouselImages,
-      getAvailableStock, getEffectivePrice,
-      loading,
-      homeContent, updateHomeContent,
-    }}>
+    <StoreContext.Provider value={value}>
       {children}
     </StoreContext.Provider>
   );
