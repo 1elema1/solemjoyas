@@ -370,12 +370,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const lines = cart.map(item => {
       const p = products.find(prod => prod.id === item.productId);
       if (!p) return '';
-      const variantText = item.variant && item.variant !== 'Ãšnica' ? ` (${item.variant})` : '';
+      const variantText = item.variant && item.variant !== 'Única' ? ` (${item.variant})` : '';
       const price = getProductPrice(p, item.variant);
-      return `â€¢ ${item.quantity}x ${p.name}${variantText} - $${(price * item.quantity).toLocaleString('es-AR')}`;
+      return `• ${item.quantity}x ${p.name}${variantText} - $${(price * item.quantity).toLocaleString('es-AR')}`;
     }).filter(Boolean).join('\n');
 
-    const message = `Â¡Hola SOLEM! Quiero hacer el siguiente pedido ðŸ›ï¸\n\n*Pedido - Plata 925:*\n\n${lines}\n\n*TOTAL: $${cartTotal.toLocaleString('es-AR')}*\n\nPor favor confirmame disponibilidad. Â¡Muchas gracias! âœ¨`;
+    const message = `Hola Solem!! quiero hacer el siguiente pedido:\n\n${lines}\n\n*TOTAL: $${cartTotal.toLocaleString('es-AR')}*\n\nPor favor confirmame disponibilidad. ¡Muchas gracias! ✨`;
     return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
   };
 
