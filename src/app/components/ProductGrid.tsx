@@ -470,12 +470,22 @@ function ProductCardSkeleton() {
 export function ProductGrid() {
   const { clientProducts, selectedCategory, setSelectedCategory, setCurrentView, searchQuery, loading } = useStore();
   const [activeCategory, setActiveCategory] = useState<string | null>(selectedCategory);
+  const [limit, setLimit] = useState(20);
 
   useEffect(() => { setActiveCategory(selectedCategory); }, [selectedCategory]);
+
+  // Resetear el límite de productos al cambiar de categoría o realizar una búsqueda
+  useEffect(() => {
+    setLimit(20);
+  }, [activeCategory, searchQuery]);
 
   const handleCategoryChange = (cat: string | null) => {
     setActiveCategory(cat);
     setSelectedCategory(cat);
+  };
+
+  const handleLoadMore = () => {
+    setLimit(prev => prev + 20);
   };
 
   let filtered = activeCategory
@@ -490,6 +500,8 @@ export function ProductGrid() {
       p.category.toLowerCase().includes(q)
     );
   }
+
+  const displayedProducts = filtered.slice(0, limit);
 
   return (
     <div style={{ backgroundColor: '#F5F0E8', minHeight: '100vh' }}>
@@ -552,11 +564,32 @@ export function ProductGrid() {
             <p style={{ color: '#888', fontSize: '0.9rem' }}>No hay productos disponibles en esta categoría.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
-            {filtered.map((product, idx) => (
-              <ProductCard key={product.id} product={product} priority={idx < 4} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
+              {displayedProducts.map((product, idx) => (
+                <ProductCard key={product.id} product={product} priority={idx < 4} />
+              ))}
+            </div>
+            {filtered.length > limit && (
+              <button
+                onClick={handleLoadMore}
+                style={{
+                  display: 'block',
+                  margin: '60px auto 0 auto',
+                  border: '1px solid rgba(0,0,0,0.25)',
+                  color: '#1a1a1a',
+                  fontSize: '0.68rem',
+                  letterSpacing: '0.2em',
+                  padding: '15px 32px',
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer',
+                }}
+                className="uppercase hover:bg-black/5 transition-colors"
+              >
+                Mostrar más
+              </button>
+            )}
+          </>
         )}
       </div>
 
