@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, ArrowLeft, Minus, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, AlertCircle, CheckCircle2, Edit2 } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Minus, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, AlertCircle, CheckCircle2, Edit2, ShieldAlert } from 'lucide-react';
 import { useStore, Product, Variant, ColorVariant, hasStock, CATEGORIES, getProductPrice } from '../context/StoreContext';
 import { ImageUpload } from './ImageUpload';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { AuditRecord } from '../services/auditService';
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
 function Toast({ message, onDone }: { message: string; onDone: () => void }) {
@@ -1066,6 +1069,117 @@ function CouponsManager() {
   );
 }
 
+// ── Audit Manager ────────────────────────────────────────────────────────────
+function AuditManager() {
+  const [logs, setLogs] = useState<AuditRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchFilter, setSearchFilter] = useState('');
+
+  useEffect(() => {
+    const q = query(collection(db, 'audit'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const records: AuditRecord[] = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      } as AuditRecord));
+      setLogs(records);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error al obtener registros de auditoría:', error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const filteredLogs = logs.filter(log => {
+    if (!searchFilter.trim()) return true;
+    const term = searchFilter.toLowerCase();
+    return (
+      (log.correo && log.correo.toLowerCase().includes(term)) ||
+      (log.accion && log.accion.toLowerCase().includes(term)) ||
+      (log.resultado && log.resultado.toLowerCase().includes(term)) ||
+      (log.ip && log.ip.includes(term))
+    );
+  });
+
+  return (
+    <div>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div>
+          <h3 style={{ fontFamily: '"Cormorant Garamond","Georgia",serif', fontSize: '1.6rem', color: '#1a1a1a', fontWeight: 300, marginBottom: '4px' }}>
+            Módulo de Auditoría
+          </h3>
+          <p style={{ color: '#aaa', fontSize: '0.78rem' }}>
+            Historial detallado de solicitudes, seguridad y eventos del sistema.
+          </p>
+        </div>
+
+        <input
+          type="text"
+          value={searchFilter}
+          onChange={(e) => setSearchFilter(e.target.value)}
+          placeholder="Buscar por correo, acción o IP..."
+          style={{ border: '1px solid rgba(0,0,0,0.12)', padding: '8px 14px', fontSize: '0.8rem', background: 'transparent', color: '#1a1a1a', outline: 'none', width: '260px' }}
+        />
+      </div>
+
+      {loading ? (
+        <p style={{ color: '#aaa', fontSize: '0.85rem' }}>Cargando eventos de auditoría...</p>
+      ) : filteredLogs.length === 0 ? (
+        <div style={{ backgroundColor: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)', padding: '28px', textAlign: 'center' }}>
+          <p style={{ color: '#888', fontSize: '0.85rem', margin: 0 }}>No se encontraron registros de auditoría.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto" style={{ border: '1px solid rgba(0,0,0,0.08)' }}>
+          <table className="w-full text-left border-collapse" style={{ fontSize: '0.78rem' }}>
+            <thead>
+              <tr style={{ backgroundColor: 'rgba(0,0,0,0.04)', borderBottom: '1px solid rgba(0,0,0,0.1)', color: '#666' }} className="uppercase font-medium">
+                <th className="py-3 px-3">Fecha / Hora</th>
+                <th className="py-3 px-3">Acción</th>
+                <th className="py-3 px-3">Correo Solicitado</th>
+                <th className="py-3 px-3">IP / Entorno</th>
+                <th className="py-3 px-3">Resultado</th>
+                <th className="py-3 px-3">Origen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredLogs.map(log => {
+                const isError = log.resultado && log.resultado.toLowerCase().includes('error');
+                return (
+                  <tr key={log.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', backgroundColor: 'rgba(255,255,255,0.4)' }} className="hover:bg-white/80 transition-colors">
+                    <td className="py-3 px-3 whitespace-nowrap font-mono text-[0.72rem]" style={{ color: '#555' }}>
+                      {log.fecha} <span style={{ color: '#888' }}>{log.hora}</span>
+                    </td>
+                    <td className="py-3 px-3 font-medium" style={{ color: '#1a1a1a' }}>
+                      {log.accion}
+                    </td>
+                    <td className="py-3 px-3 font-mono text-[0.75rem]" style={{ color: '#1a1a1a' }}>
+                      {log.correo}
+                    </td>
+                    <td className="py-3 px-3" style={{ color: '#666' }}>
+                      <span className="font-mono text-[0.72rem] block" style={{ color: '#1a1a1a' }}>{log.ip}</span>
+                      <span style={{ fontSize: '0.68rem', color: '#888' }}>{log.navegador} · {log.sistema}</span>
+                    </td>
+                    <td className="py-3 px-3 font-medium">
+                      <span style={{ color: isError ? '#c0392b' : '#6B8F71' }}>
+                        {log.resultado}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3" style={{ color: '#888' }}>
+                      {log.origen}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Constante fuera del componente para evitar recreación en cada render
 const EMPTY_FORM = {
   name: '',
@@ -1082,7 +1196,7 @@ const EMPTY_FORM = {
 export function AdminPanel() {
   const navigate = useNavigate();
   const { products, addProduct, updateProduct } = useStore();
-  const [activeTab, setActiveTab] = useState<'list' | 'add' | 'edit' | 'carousel' | 'home' | 'prices' | 'coupons'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'add' | 'edit' | 'carousel' | 'home' | 'prices' | 'coupons' | 'audit'>('list');
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
@@ -1216,7 +1330,7 @@ export function AdminPanel() {
 
           {/* Tabs */}
           <div style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }} className="flex gap-8 mb-10 overflow-x-auto whitespace-nowrap">
-            {([['list', `Productos (${products.length})`], ['add', 'Agregar producto'], ['home', 'Contenido Home'], ['carousel', 'Carrusel'], ['prices', 'Precios masivos'], ['coupons', 'Cupones']] as const).map(([tab, label]) => (
+            {([['list', `Productos (${products.length})`], ['add', 'Agregar producto'], ['home', 'Contenido Home'], ['carousel', 'Carrusel'], ['prices', 'Precios masivos'], ['coupons', 'Cupones'], ['audit', 'Auditoría']] as const).map(([tab, label]) => (
               <button
                 key={tab}
                 onClick={() => {
@@ -1424,6 +1538,8 @@ export function AdminPanel() {
           {activeTab === 'prices' && <BulkPriceManager />}
 
           {activeTab === 'coupons' && <CouponsManager />}
+
+          {activeTab === 'audit' && <AuditManager />}
         </div>
       </div>
     </>
