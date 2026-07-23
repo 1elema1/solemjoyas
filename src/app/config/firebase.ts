@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
@@ -16,7 +16,20 @@ const firebaseConfig = {
 // Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 
-// Exportar servicios
-export const db = getFirestore(app);
+// Inicializar Firestore con caché persistente y soporte multi-pestaña para carga instantánea
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
+  });
+} catch (error) {
+  console.warn("Firestore cache initialization failed, falling back to standard Firestore:", error);
+  db = getFirestore(app);
+}
+
+export { db };
 export const auth = getAuth(app);
 export const storage = getStorage(app);
+

@@ -448,9 +448,27 @@ function ProductCard({ product, priority }: { product: Product; priority?: boole
   );
 }
 
+function ProductCardSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div 
+        style={{ aspectRatio: '1', backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: '1px' }} 
+        className="w-full mb-4"
+      />
+      <div 
+        style={{ height: '14px', backgroundColor: 'rgba(0,0,0,0.05)', width: '70%', borderRadius: '1px' }} 
+        className="mb-2"
+      />
+      <div 
+        style={{ height: '14px', backgroundColor: 'rgba(0,0,0,0.05)', width: '40%', borderRadius: '1px' }} 
+      />
+    </div>
+  );
+}
+
 // ── Main grid ─────────────────────────────────────────────────────────────────
 export function ProductGrid() {
-  const { clientProducts, selectedCategory, setSelectedCategory, setCurrentView, searchQuery } = useStore();
+  const { clientProducts, selectedCategory, setSelectedCategory, setCurrentView, searchQuery, loading } = useStore();
   const [activeCategory, setActiveCategory] = useState<string | null>(selectedCategory);
 
   useEffect(() => { setActiveCategory(selectedCategory); }, [selectedCategory]);
@@ -522,7 +540,13 @@ export function ProductGrid() {
           ))}
         </div>
 
-        {filtered.length === 0 ? (
+        {loading && filtered.length === 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <p style={{ color: '#6B8F71', fontSize: '2.5rem', marginBottom: '16px' }}>✦</p>
             <p style={{ color: '#888', fontSize: '0.9rem' }}>No hay productos disponibles en esta categoría.</p>
@@ -546,3 +570,4 @@ export function ProductGrid() {
     </div>
   );
 }
+

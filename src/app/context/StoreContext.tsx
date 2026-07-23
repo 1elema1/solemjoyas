@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import {
   collection,
   doc,
@@ -170,14 +170,14 @@ const DEFAULT_HOME_CONTENT: HomeContent = {
     Argollas: '',
     Conjuntos: '',
   },
-  carouselTitle: 'InspiraciÃ³n',
-  carouselSubtitle: 'DescubrÃ­ nuestras piezas',
+  carouselTitle: 'Inspiración',
+  carouselSubtitle: 'Descubrí nuestras piezas',
   carouselImages: [],
-  footerLocation: 'Ubicados en\nCÃ³rdoba Capital',
-  footerShipping: 'Realizamos envÃ­os\nmediante Uber EnvÃ­os',
+  footerLocation: 'Ubicados en\nCórdoba Capital',
+  footerShipping: 'Realizamos envíos\nmediante Uber Envíos',
   footerMaterial: 'Plata 925\ncertificada y garantizada',
-  footerOrders: 'Coordinados por WhatsApp\nSin pagos en lÃ­nea',
-  footerCopyright: 'Â© 2025 SOLEM Â· Todos los derechos reservados',
+  footerOrders: 'Coordinados por WhatsApp\nSin pagos en línea',
+  footerCopyright: '© 2025 SOLEM · Todos los derechos reservados',
 };
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -189,7 +189,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [homeContent, setHomeContent] = useState<HomeContent>(() => loadFromStorage('solem_home_cache', DEFAULT_HOME_CONTENT));
-  const [loading, setLoading] = useState(true);
+  
+  // Si ya tenemos productos en cache, no bloqueamos la UI con un loading indicator (carga instantánea)
+  const [loading, setLoading] = useState(() => {
+    const cached = localStorage.getItem('solem_products_cache');
+    try {
+      return !cached || JSON.parse(cached).length === 0;
+    } catch {
+      return true;
+    }
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -199,7 +208,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  // Real-time sync de productos desde Firestore con cachÃ© local
+  // Timeout de seguridad: Si la conexión a Firestore tarda más de 2 segundos (ej: mala red),
+  // forzamos la desactivación de loading para mostrar lo que tengamos en cache.
+  useEffect(() => {
+    if (!loading) return;
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  // Real-time sync de productos desde Firestore con caché local y tolerancia a errores
   useEffect(() => {
     const q = query(collection(db, 'products'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -209,13 +228,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setProducts(productsData);
       setLoading(false);
       localStorage.setItem('solem_products_cache', JSON.stringify(productsData));
+    }, (error) => {
+      console.warn("Firestore onSnapshot error (products):", error);
+      setLoading(false); // Liberar carga ante fallos de conexión
     });
     return () => unsubscribe();
   }, []);
 
   useEffect(() => { localStorage.setItem('solem_cart_v2', JSON.stringify(cart)); }, [cart]);
 
-  // Sync homeContent desde Firestore (fuente Ãºnica de verdad, incluye carouselImages)
+  // Sync homeContent desde Firestore (fuente única de verdad, incluye carouselImages)
   useEffect(() => {
     const homeDocRef = doc(db, 'settings', 'homeContent');
     const unsubscribe = onSnapshot(homeDocRef, (docSnap) => {
@@ -224,11 +246,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setHomeContent(data);
         localStorage.setItem('solem_home_cache', JSON.stringify(data));
       }
+    }, (error) => {
+      console.warn("Firestore onSnapshot error (homeContent):", error);
     });
     return () => unsubscribe();
   }, []);
 
-  // carouselImages derivado de homeContent â€” sin estado duplicado
+  // carouselImages derivado de homeContent — sin estado duplicado
   const carouselImages = useMemo(
     () => homeContent.carouselImages ?? [],
     [homeContent.carouselImages]
