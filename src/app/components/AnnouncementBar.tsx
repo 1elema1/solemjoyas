@@ -2,8 +2,13 @@ import { useStore } from '../context/StoreContext';
 
 export function AnnouncementBar() {
   const { homeContent } = useStore();
-  const announcements = homeContent.announcements && homeContent.announcements.length > 0
-    ? homeContent.announcements
+  
+  // Limpiamos los anuncios para quitar textos vacíos y asegurar que tengamos al menos un anuncio válido
+  const rawAnnouncements = homeContent.announcements || [];
+  const validAnnouncements = rawAnnouncements.filter(txt => txt && txt.trim() !== '');
+
+  const announcements = validAnnouncements.length > 0
+    ? validAnnouncements
     : [
         "✨ 3 CUOTAS SIN INTERÉS EN TODA LA TIENDA ✨",
         "🚚 ENVÍOS GRATIS EN CÓRDOBA SUPERANDO $50.000 🚚",
@@ -27,26 +32,6 @@ export function AnnouncementBar() {
         borderBottom: '1px solid rgba(255,255,255,0.05)',
       }}
     >
-      <style>{`
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-33.3333%); }
-        }
-        .marquee-container {
-          display: flex;
-          white-space: nowrap;
-          animation: marquee 30s linear infinite;
-        }
-        .marquee-item {
-          font-size: 0.62rem;
-          font-weight: 500;
-          letter-spacing: 0.18em;
-          padding: 0 3rem;
-          text-transform: uppercase;
-          display: flex;
-          align-items: center;
-        }
-      `}</style>
       <div className="marquee-container">
         {repeatedAnnouncements.map((text, idx) => (
           <div key={idx} className="marquee-item">
