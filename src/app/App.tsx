@@ -7,6 +7,7 @@ import { CartDrawer } from './components/CartDrawer';
 import { AdminPanel } from './components/AdminPanel';
 import { AdminLogin } from './components/AdminLogin';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AnnouncementBar } from './components/AnnouncementBar';
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -19,6 +20,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
       display: 'flex',
       flexDirection: 'column'
     }}>
+      <AnnouncementBar />
       <Navbar />
       <main style={{ flex: 1 }}>
         {children}

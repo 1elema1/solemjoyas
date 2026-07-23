@@ -64,6 +64,14 @@ export interface User {
   role: 'admin';
 }
 
+export interface Coupon {
+  id: string;
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  active: boolean;
+}
+
 export interface HomeContent {
   heroImage: string;
   heroTagline: string;
@@ -85,6 +93,7 @@ export interface HomeContent {
   footerOrders: string;
   footerCopyright: string;
   carouselImages?: string[];
+  announcements?: string[];
 }
 
 interface StoreContextType {
@@ -119,6 +128,19 @@ interface StoreContextType {
   loading: boolean;
   homeContent: HomeContent;
   updateHomeContent: (content: Partial<HomeContent>) => Promise<void>;
+
+  // Cupones
+  coupons: Coupon[];
+  appliedCoupon: Coupon | null;
+  applyCoupon: (code: string) => { success: boolean; message?: string };
+  removeCoupon: () => void;
+  addCoupon: (coupon: Omit<Coupon, 'id'>) => Promise<void>;
+  deleteCoupon: (id: string) => Promise<void>;
+  cartDiscount: number;
+  cartFinalTotal: number;
+
+  // Cambios Masivos
+  applyBulkPriceChange: (category: string | 'all', action: 'increase' | 'discount', type: 'percentage' | 'fixed', value: number) => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextType | null>(null);
@@ -190,6 +212,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [homeContent, setHomeContent] = useState<HomeContent>(() => loadFromStorage('solem_home_cache', DEFAULT_HOME_CONTENT));
   
+  // Nuevos estados para cupones
+  const [coupons, setCoupons] = useState<Coupon[]>(() => loadFromStorage('solem_coupons_cache', []));
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(() => loadFromStorage('solem_applied_coupon', null));
+
   // Si ya tenemos productos en cache, no bloqueamos la UI con un loading indicator (carga instantánea)
   const [loading, setLoading] = useState(() => {
     const cached = localStorage.getItem('solem_products_cache');
@@ -236,8 +262,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => { localStorage.setItem('solem_cart_v2', JSON.stringify(cart)); }, [cart]);
+  useEffect(() => { localStorage.setItem('solem_applied_coupon', JSON.stringify(appliedCoupon)); }, [appliedCoupon]);
 
-  // Sync homeContent desde Firestore (fuente única de verdad, incluye carouselImages)
+  // Sync homeContent desde Firestore (fuente única de verdad, incluye carouselImages y announcements)
   useEffect(() => {
     const homeDocRef = doc(db, 'settings', 'homeContent');
     const unsubscribe = onSnapshot(homeDocRef, (docSnap) => {
@@ -252,13 +279,40 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  // Sync de cupones desde Firestore
+  useEffect(() => {
+    const q = query(collection(db, 'coupons'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const couponsData: Coupon[] = snapshot.docs.map(
+        (docSnap) => ({ id: docSnap.id, ...docSnap.data() } as Coupon)
+      );
+      setCoupons(couponsData);
+      localStorage.setItem('solem_coupons_cache', JSON.stringify(couponsData));
+    }, (error) => {
+      console.warn("Firestore onSnapshot error (coupons):", error);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Validar el cupón aplicado contra los cupones activos (ej: si se desactiva o elimina en el admin)
+  useEffect(() => {
+    if (appliedCoupon) {
+      const current = coupons.find(c => c.id === appliedCoupon.id);
+      if (!current || !current.active) {
+        setAppliedCoupon(null);
+      } else if (current.value !== appliedCoupon.value || current.type !== appliedCoupon.type || current.code !== appliedCoupon.code) {
+        setAppliedCoupon(current);
+      }
+    }
+  }, [coupons, appliedCoupon]);
+
   // carouselImages derivado de homeContent — sin estado duplicado
   const carouselImages = useMemo(
     () => homeContent.carouselImages ?? [],
     [homeContent.carouselImages]
   );
 
-  // Derivados memoizados para evitar recÃ¡lculo en cada render
+  // Derivados memoizados para evitar recálculo en cada render
   const clientProducts = useMemo(
     () => products.filter(p => p.active && hasStock(p)),
     [products]
@@ -271,6 +325,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, 0), [cart, products]);
 
   const cartCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
+
+  // Descuento derivado en base al cupón y total del carrito
+  const cartDiscount = useMemo(() => {
+    if (!appliedCoupon) return 0;
+    if (appliedCoupon.type === 'percentage') {
+      return Math.round((cartTotal * appliedCoupon.value) / 100);
+    }
+    return Math.min(cartTotal, appliedCoupon.value);
+  }, [appliedCoupon, cartTotal]);
+
+  const cartFinalTotal = useMemo(() => {
+    return Math.max(0, cartTotal - cartDiscount);
+  }, [cartTotal, cartDiscount]);
 
   const addProduct = async (product: Omit<Product, 'id'>) => {
     const clean = Object.fromEntries(
@@ -318,7 +385,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (currentQty >= availableStock) {
       return {
         success: false,
-        message: `No hay mÃ¡s stock disponible de este producto${variant && variant !== 'Ãšnica' ? ` (${variant})` : ''}`,
+        message: `No hay más stock disponible de este producto${variant && variant !== 'Única' ? ` (${variant})` : ''}`,
       };
     }
 
@@ -356,7 +423,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       await signInWithEmailAndPassword(auth, email, password);
       return { success: true, message: 'Bienvenido, Administrador' };
     } catch {
-      return { success: false, message: 'Email o contraseÃ±a incorrectos' };
+      return { success: false, message: 'Email o contraseña incorrectos' };
     }
   };
 
@@ -375,7 +442,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return `• ${item.quantity}x ${p.name}${variantText} - $${(price * item.quantity).toLocaleString('es-AR')}`;
     }).filter(Boolean).join('\n');
 
-    const message = `Hola Solem!! quiero hacer el siguiente pedido:\n\n${lines}\n\n*TOTAL: $${cartTotal.toLocaleString('es-AR')}*\n\nPor favor confirmame disponibilidad. ¡Muchas gracias! ✨`;
+    let message = `Hola Solem!! quiero hacer el siguiente pedido:\n\n${lines}\n\n`;
+    if (appliedCoupon && cartDiscount > 0) {
+      message += `*Subtotal: $${cartTotal.toLocaleString('es-AR')}*\n`;
+      message += `*Cupón: ${appliedCoupon.code} (-$${cartDiscount.toLocaleString('es-AR')})*\n`;
+      message += `*TOTAL FINAL: $${cartFinalTotal.toLocaleString('es-AR')}*\n\n`;
+    } else {
+      message += `*TOTAL: $${cartTotal.toLocaleString('es-AR')}*\n\n`;
+    }
+    message += `Por favor confirmame disponibilidad. ¡Muchas gracias! ✨`;
     return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
   };
 
@@ -395,6 +470,68 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // Cupones - Acciones del lado cliente y admin
+  const addCoupon = async (coupon: Omit<Coupon, 'id'>) => {
+    const clean = {
+      code: coupon.code.toUpperCase().trim(),
+      type: coupon.type,
+      value: Number(coupon.value),
+      active: coupon.active,
+    };
+    await addDoc(collection(db, 'coupons'), clean);
+  };
+
+  const deleteCoupon = async (id: string) => {
+    await deleteDoc(doc(db, 'coupons', id));
+  };
+
+  const applyCoupon = (code: string): { success: boolean; message?: string } => {
+    const cleanCode = code.toUpperCase().trim();
+    const coupon = coupons.find(c => c.code === cleanCode);
+    if (!coupon) return { success: false, message: 'El cupón no existe' };
+    if (!coupon.active) return { success: false, message: 'El cupón no está activo' };
+    setAppliedCoupon(coupon);
+    return { success: true };
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+  };
+
+  // Cambios Masivos de Precios (Admin)
+  const applyBulkPriceChange = async (category: string | 'all', action: 'increase' | 'discount', type: 'percentage' | 'fixed', value: number) => {
+    const targets = products.filter(p => category === 'all' || p.category === category);
+    const factor = action === 'increase' ? 1 : -1;
+    
+    for (const product of targets) {
+      let newPrice = product.price;
+      if (type === 'percentage') {
+        newPrice = Math.round(product.price * (1 + (value / 100) * factor));
+      } else {
+        newPrice = Math.max(0, product.price + value * factor);
+      }
+      
+      const updates: Partial<Omit<Product, 'id'>> = { price: newPrice };
+      
+      if (product.variants && product.variants.length > 0) {
+        updates.variants = product.variants.map(v => {
+          if (v.price != null && v.price > 0) {
+            let nvPrice = v.price;
+            if (type === 'percentage') {
+              nvPrice = Math.round(v.price * (1 + (value / 100) * factor));
+            } else {
+              nvPrice = Math.max(0, v.price + value * factor);
+            }
+            return { ...v, price: nvPrice };
+          }
+          return v;
+        });
+      }
+
+      await updateProduct(product.id, updates);
+    }
+  };
+
   // useMemo en el value evita que todos los consumidores re-rendericen
   // cuando cambia un estado no relacionado (ej: cartOpen no afecta a ProductGrid)
   const value = useMemo<StoreContextType>(() => ({
@@ -407,13 +544,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     getAvailableStock,
     loading,
     homeContent, updateHomeContent,
-  // Las funciones no cambian entre renders (son definidas en scope del provider)
-  // Solo los valores de estado son dependencies reales
+    coupons, appliedCoupon, applyCoupon, removeCoupon, addCoupon, deleteCoupon, cartDiscount, cartFinalTotal,
+    applyBulkPriceChange,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [
     products, clientProducts, cart, cartTotal, cartCount,
     cartOpen, currentView, selectedCategory,
     user, searchQuery, carouselImages, loading, homeContent,
+    coupons, appliedCoupon, cartDiscount, cartFinalTotal,
   ]);
 
   return (

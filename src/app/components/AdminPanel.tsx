@@ -353,7 +353,7 @@ function HomeContentManager() {
   const { homeContent, updateHomeContent, carouselImages } = useStore();
   const [form, setForm] = useState(homeContent);
   const [saved, setSaved] = useState(false);
-  const [activeSection, setActiveSection] = useState<'hero' | 'categories' | 'footer'>('hero');
+  const [activeSection, setActiveSection] = useState<'hero' | 'categories' | 'footer' | 'announcements'>('hero');
 
   const handleSave = async () => {
     try {
@@ -384,10 +384,11 @@ function HomeContentManager() {
           { id: 'hero', label: 'Hero' },
           { id: 'categories', label: 'Categorías' },
           { id: 'footer', label: 'Footer' },
+          { id: 'announcements', label: 'Anuncios' },
         ].map(({ id, label }) => (
           <button
             key={id}
-            onClick={() => setActiveSection(id as 'hero' | 'categories' | 'footer')}
+            onClick={() => setActiveSection(id as 'hero' | 'categories' | 'footer' | 'announcements')}
             style={{
               fontSize: '0.68rem', letterSpacing: '0.12em',
               color: activeSection === id ? '#6B8F71' : '#888',
@@ -634,6 +635,67 @@ function HomeContentManager() {
           </div>
         )}
 
+        {activeSection === 'announcements' && (
+          <div className="flex flex-col gap-6">
+            <div>
+              <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.15em' }} className="uppercase block mb-2">
+                Anuncios en barra superior (Marquesina infinita)
+              </label>
+              <p style={{ color: '#aaa', fontSize: '0.7rem', marginBottom: '14px' }}>
+                Estos mensajes se mostrarán en la parte superior de la página, rotando de forma continua.
+              </p>
+
+              <div className="flex flex-col gap-3 mb-4">
+                {(form.announcements || []).map((text, idx) => (
+                  <div key={idx} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={text}
+                      onChange={(e) => {
+                        const updated = [...(form.announcements || [])];
+                        updated[idx] = e.target.value;
+                        setForm(f => ({ ...f, announcements: updated }));
+                      }}
+                      style={{ flex: 1, border: '1px solid rgba(0,0,0,0.12)', padding: '8px 12px', fontSize: '0.85rem', background: 'transparent', color: '#1a1a1a', outline: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = (form.announcements || []).filter((_, i) => i !== idx);
+                        setForm(f => ({ ...f, announcements: updated }));
+                      }}
+                      style={{ padding: '8px 14px', border: '1px solid rgba(0,0,0,0.12)', color: '#c0392b', background: 'transparent', cursor: 'pointer' }}
+                      className="hover:bg-red-50 transition-colors"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const updated = [...(form.announcements || []), '✨ NUEVO ANUNCIO ✨'];
+                  setForm(f => ({ ...f, announcements: updated }));
+                }}
+                style={{
+                  border: '1px solid #1a1a1a',
+                  color: '#1a1a1a',
+                  fontSize: '0.65rem',
+                  letterSpacing: '0.15em',
+                  padding: '10px 16px',
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer',
+                }}
+                className="uppercase hover:bg-black/5"
+              >
+                + Agregar anuncio
+              </button>
+            </div>
+          </div>
+        )}
+
         <button
           onClick={handleSave}
           style={{
@@ -697,6 +759,313 @@ function CarouselManager() {
   );
 }
 
+// ── Bulk price manager ────────────────────────────────────────────────────────
+function BulkPriceManager() {
+  const { applyBulkPriceChange } = useStore();
+  const [category, setCategory] = useState<string>('all');
+  const [action, setAction] = useState<'increase' | 'discount'>('increase');
+  const [type, setType] = useState<'percentage' | 'fixed'>('percentage');
+  const [value, setValue] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  const handleApply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage('');
+    setError('');
+
+    const val = parseFloat(value);
+    if (isNaN(val) || val <= 0) {
+      setError('Por favor ingresá un valor válido mayor a 0');
+      return;
+    }
+
+    if (!window.confirm('¿Estás seguro de que quieres aplicar este cambio masivo de precios? Esta acción es irreversible.')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await applyBulkPriceChange(category, action, type, val);
+      setMessage('Precios actualizados exitosamente en la base de datos');
+      setValue('');
+    } catch (err) {
+      setError('Ocurrió un error al intentar actualizar los precios');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-xl">
+      <h3 style={{ fontFamily: '"Cormorant Garamond","Georgia",serif', fontSize: '1.6rem', color: '#1a1a1a', fontWeight: 300, marginBottom: '12px' }}>
+        Aumentos y Descuentos Masivos
+      </h3>
+      <p style={{ color: '#aaa', fontSize: '0.78rem', marginBottom: '24px' }}>
+        Modificá los precios de tus productos en bloque de forma segura. El cambio afectará el precio base y también el precio de las variantes.
+      </p>
+
+      <div style={{ backgroundColor: 'rgba(192,57,43,0.06)', border: '1px solid rgba(192,57,43,0.18)', padding: '14px 18px', marginBottom: '24px' }}>
+        <p style={{ color: '#c0392b', fontSize: '0.75rem', fontWeight: 500 }} className="uppercase mb-1">⚠️ Cuidado</p>
+        <p style={{ color: '#c0392b', fontSize: '0.72rem', lineHeight: 1.5 }}>
+          Esta herramienta modifica directamente los precios de los productos guardados en tu base de datos de Firebase. Los cambios son instantáneos e irreversibles.
+        </p>
+      </div>
+
+      <form onSubmit={handleApply} className="flex flex-col gap-5">
+        <div>
+          <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.15em' }} className="uppercase block mb-2">Categoría a modificar</label>
+          <select
+            value={category}
+            onChange={e => setCategory(e.target.value)}
+            style={{ width: '100%', border: '1px solid rgba(0,0,0,0.12)', padding: '10px 12px', fontSize: '0.85rem', background: '#F5F0E8', color: '#1a1a1a', outline: 'none', cursor: 'pointer' }}
+          >
+            <option value="all">Todas las categorías</option>
+            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.15em' }} className="uppercase block mb-2">Acción</label>
+            <select
+              value={action}
+              onChange={e => setAction(e.target.value as 'increase' | 'discount')}
+              style={{ width: '100%', border: '1px solid rgba(0,0,0,0.12)', padding: '10px 12px', fontSize: '0.85rem', background: '#F5F0E8', color: '#1a1a1a', outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="increase">Aumento (Subir precios)</option>
+              <option value="discount">Descuento (Bajar precios)</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.15em' }} className="uppercase block mb-2">Tipo de Valor</label>
+            <select
+              value={type}
+              onChange={e => setType(e.target.value as 'percentage' | 'fixed')}
+              style={{ width: '100%', border: '1px solid rgba(0,0,0,0.12)', padding: '10px 12px', fontSize: '0.85rem', background: '#F5F0E8', color: '#1a1a1a', outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="percentage">Porcentaje (%)</option>
+              <option value="fixed">Monto Fijo ($ ARS)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.15em' }} className="uppercase block mb-2">
+            Valor a aplicar ({type === 'percentage' ? '%' : '$ ARS'})
+          </label>
+          <input
+            type="number"
+            value={value}
+            min={0.1}
+            step="any"
+            required
+            onChange={e => setValue(e.target.value)}
+            placeholder={type === 'percentage' ? 'Ej: 10' : 'Ej: 500'}
+            style={{ width: '100%', border: '1px solid rgba(0,0,0,0.12)', padding: '10px 12px', fontSize: '0.85rem', background: 'transparent', color: '#1a1a1a', outline: 'none' }}
+          />
+        </div>
+
+        {error && <p style={{ color: '#c0392b', fontSize: '0.78rem' }}>{error}</p>}
+        {message && <p style={{ color: '#6B8F71', fontSize: '0.78rem' }}>{message}</p>}
+
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            backgroundColor: '#1a1a1a',
+            color: '#F5F0E8',
+            fontSize: '0.68rem',
+            letterSpacing: '0.2em',
+            padding: '14px',
+            border: 'none',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.7 : 1,
+            marginTop: '10px'
+          }}
+          className="uppercase hover:bg-black/85"
+        >
+          {loading ? 'Aplicando cambios...' : 'Aplicar cambio masivo'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ── Coupons manager ───────────────────────────────────────────────────────────
+function CouponsManager() {
+  const { coupons, addCoupon, deleteCoupon } = useStore();
+  const [code, setCode] = useState('');
+  const [type, setType] = useState<'percentage' | 'fixed'>('percentage');
+  const [value, setValue] = useState('');
+  const [active, setActive] = useState(true);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    const cleanCode = code.toUpperCase().trim();
+    if (!cleanCode) { setError('El código del cupón es requerido'); return; }
+    
+    if (coupons.some(c => c.code === cleanCode)) {
+      setError('Ya existe un cupón con este código');
+      return;
+    }
+
+    const val = parseFloat(value);
+    if (isNaN(val) || val <= 0) {
+      setError('Ingresá un valor de descuento válido');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await addCoupon({
+        code: cleanCode,
+        type,
+        value: val,
+        active,
+      });
+      setCode('');
+      setValue('');
+      setActive(true);
+    } catch (err) {
+      setError('Error al crear el cupón');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="grid md:grid-cols-2 gap-10">
+      <div>
+        <h3 style={{ fontFamily: '"Cormorant Garamond","Georgia",serif', fontSize: '1.6rem', color: '#1a1a1a', fontWeight: 300, marginBottom: '16px' }}>
+          Crear Nuevo Cupón
+        </h3>
+        
+        <form onSubmit={handleCreate} className="flex flex-col gap-5 max-w-sm">
+          <div>
+            <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.15em' }} className="uppercase block mb-2">Código del Cupón</label>
+            <input
+              type="text"
+              value={code}
+              required
+              onChange={e => setCode(e.target.value)}
+              placeholder="Ej: SOLEMFEST"
+              style={{ width: '100%', border: '1px solid rgba(0,0,0,0.12)', padding: '10px 12px', fontSize: '0.85rem', background: 'transparent', color: '#1a1a1a', outline: 'none', textTransform: 'uppercase' }}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.15em' }} className="uppercase block mb-2">Tipo de Descuento</label>
+              <select
+                value={type}
+                onChange={e => setType(e.target.value as 'percentage' | 'fixed')}
+                style={{ width: '100%', border: '1px solid rgba(0,0,0,0.12)', padding: '10px 12px', fontSize: '0.85rem', background: '#F5F0E8', color: '#1a1a1a', outline: 'none', cursor: 'pointer' }}
+              >
+                <option value="percentage">Porcentaje (%)</option>
+                <option value="fixed">Monto Fijo ($)</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.15em' }} className="uppercase block mb-2">Valor Descuento</label>
+              <input
+                type="number"
+                value={value}
+                required
+                min={1}
+                onChange={e => setValue(e.target.value)}
+                placeholder={type === 'percentage' ? 'Ej: 15' : 'Ej: 1500'}
+                style={{ width: '100%', border: '1px solid rgba(0,0,0,0.12)', padding: '10px 12px', fontSize: '0.85rem', background: 'transparent', color: '#1a1a1a', outline: 'none' }}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 mt-1">
+            <input
+              type="checkbox"
+              id="active"
+              checked={active}
+              onChange={e => setActive(e.target.checked)}
+              style={{ width: '16px', height: '16px', accentColor: '#6B8F71', cursor: 'pointer' }}
+            />
+            <label htmlFor="active" style={{ fontSize: '0.8rem', color: '#1a1a1a', cursor: 'pointer' }}>Cupón activo (disponible para uso)</label>
+          </div>
+
+          {error && <p style={{ color: '#c0392b', fontSize: '0.78rem' }}>{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              backgroundColor: '#1a1a1a',
+              color: '#F5F0E8',
+              fontSize: '0.68rem',
+              letterSpacing: '0.2em',
+              padding: '14px',
+              border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+            }}
+            className="uppercase hover:bg-black/85"
+          >
+            {loading ? 'Creando...' : 'Crear Cupón'}
+          </button>
+        </form>
+      </div>
+
+      <div>
+        <h3 style={{ fontFamily: '"Cormorant Garamond","Georgia",serif', fontSize: '1.6rem', color: '#1a1a1a', fontWeight: 300, marginBottom: '16px' }}>
+          Cupones Activos
+        </h3>
+
+        {coupons.length === 0 ? (
+          <p style={{ color: '#aaa', fontSize: '0.85rem' }}>No hay cupones creados aún.</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {coupons.map(coupon => (
+              <div
+                key={coupon.id}
+                style={{ backgroundColor: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.08)', padding: '12px 16px' }}
+                className="flex items-center justify-between"
+              >
+                <div>
+                  <p style={{ fontSize: '0.88rem', color: '#1a1a1a', fontWeight: 600 }} className="uppercase mb-0.5">
+                    {coupon.code}
+                  </p>
+                  <p style={{ fontSize: '0.75rem', color: '#888' }} className="mb-0">
+                    Descuento: {coupon.type === 'percentage' ? `${coupon.value}%` : `$${coupon.value}`} · Estado:{' '}
+                    <span style={{ color: coupon.active ? '#6B8F71' : '#c0392b', fontWeight: 500 }}>
+                      {coupon.active ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </p>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(`¿Seguro que quieres eliminar el cupón ${coupon.code}?`)) {
+                      deleteCoupon(coupon.id);
+                    }
+                  }}
+                  style={{ padding: '6px 12px', border: '1px solid rgba(0,0,0,0.12)', color: '#c0392b', background: 'transparent', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.08em' }}
+                  className="uppercase hover:bg-red-50 transition-colors"
+                >
+                  Eliminar
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Constante fuera del componente para evitar recreación en cada render
 const EMPTY_FORM = {
   name: '',
@@ -713,7 +1082,7 @@ const EMPTY_FORM = {
 export function AdminPanel() {
   const navigate = useNavigate();
   const { products, addProduct, updateProduct } = useStore();
-  const [activeTab, setActiveTab] = useState<'list' | 'add' | 'edit' | 'carousel' | 'home'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'add' | 'edit' | 'carousel' | 'home' | 'prices' | 'coupons'>('list');
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
@@ -846,8 +1215,8 @@ export function AdminPanel() {
           </div>
 
           {/* Tabs */}
-          <div style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }} className="flex gap-8 mb-10">
-            {([['list', `Productos (${products.length})`], ['add', 'Agregar producto'], ['home', 'Contenido Home'], ['carousel', 'Carrusel']] as const).map(([tab, label]) => (
+          <div style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }} className="flex gap-8 mb-10 overflow-x-auto whitespace-nowrap">
+            {([['list', `Productos (${products.length})`], ['add', 'Agregar producto'], ['home', 'Contenido Home'], ['carousel', 'Carrusel'], ['prices', 'Precios masivos'], ['coupons', 'Cupones']] as const).map(([tab, label]) => (
               <button
                 key={tab}
                 onClick={() => {
@@ -1051,6 +1420,10 @@ export function AdminPanel() {
           {activeTab === 'home' && <HomeContentManager />}
 
           {activeTab === 'carousel' && <CarouselManager />}
+
+          {activeTab === 'prices' && <BulkPriceManager />}
+
+          {activeTab === 'coupons' && <CouponsManager />}
         </div>
       </div>
     </>

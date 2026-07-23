@@ -8,8 +8,24 @@ export function CartDrawer() {
     cartOpen, setCartOpen, cart, products,
     updateQuantity, removeFromCart, cartTotal, cartCount,
     generateWhatsAppLink, clearCart, getAvailableStock,
+    appliedCoupon, applyCoupon, removeCoupon, cartDiscount, cartFinalTotal,
   } = useStore();
   const [errorMsg, setErrorMsg] = useState('');
+  const [couponInput, setCouponInput] = useState('');
+  const [couponError, setCouponError] = useState('');
+
+  const handleApplyCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponInput.trim()) return;
+    const res = applyCoupon(couponInput);
+    if (res && res.success) {
+      setCouponInput('');
+      setCouponError('');
+    } else {
+      setCouponError(res?.message || 'Error al aplicar cupón');
+      setTimeout(() => setCouponError(''), 4000);
+    }
+  };
 
   const handleWhatsApp = () => {
     if (cart.length === 0) return;
@@ -96,7 +112,7 @@ export function CartDrawer() {
                   color: '#1a1a1a',
                   fontWeight: 300,
                 }}
-                className="mb-2"
+                  className="mb-2"
               >
                 Tu carrito está vacío
               </p>
@@ -204,20 +220,104 @@ export function CartDrawer() {
 
         {/* Footer */}
         <div style={{ borderTop: '1px solid rgba(0,0,0,0.08)' }} className="px-7 pt-5 pb-7">
-          <div className="flex justify-between items-center mb-5">
-            <p style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.2em' }} className="uppercase">
-              Subtotal
-            </p>
-            <p
-              style={{
-                fontFamily: '"Cormorant Garamond","Georgia",serif',
-                fontSize: '1.4rem',
-                color: '#1a1a1a',
-                fontWeight: 400,
-              }}
-            >
-              ${cartTotal.toLocaleString('es-AR')}
-            </p>
+          
+          {/* Coupon Section */}
+          {cart.length > 0 && (
+            <div className="mb-5" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '16px' }}>
+              {!appliedCoupon ? (
+                <form onSubmit={handleApplyCoupon} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    placeholder="Código de cupón"
+                    style={{
+                      flex: 1,
+                      border: '1px solid rgba(0,0,0,0.12)',
+                      padding: '8px 12px',
+                      fontSize: '0.72rem',
+                      background: 'transparent',
+                      color: '#1a1a1a',
+                      outline: 'none',
+                      textTransform: 'uppercase',
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    style={{
+                      backgroundColor: '#1a1a1a',
+                      color: '#F5F0E8',
+                      fontSize: '0.62rem',
+                      letterSpacing: '0.15em',
+                      padding: '8px 16px',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                    className="uppercase hover:bg-black/80 transition-colors"
+                  >
+                    Aplicar
+                  </button>
+                </form>
+              ) : (
+                <div className="flex items-center justify-between" style={{ backgroundColor: 'rgba(107,143,113,0.08)', border: '1px solid rgba(107,143,113,0.15)', padding: '8px 12px' }}>
+                  <div>
+                    <span style={{ fontSize: '0.58rem', color: '#6B8F71', letterSpacing: '0.12em' }} className="uppercase font-medium">Cupón Activo</span>
+                    <p style={{ fontSize: '0.78rem', color: '#1a1a1a', fontWeight: 500 }} className="uppercase mb-0">
+                      {appliedCoupon.code} {appliedCoupon.type === 'percentage' ? `(-${appliedCoupon.value}%)` : `(-$${appliedCoupon.value})`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={removeCoupon}
+                    style={{ color: '#888', background: 'none', border: 'none', fontSize: '0.62rem', letterSpacing: '0.12em', cursor: 'pointer' }}
+                    className="uppercase hover:text-red-500 transition-colors"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              )}
+              {couponError && (
+                <p style={{ color: '#c0392b', fontSize: '0.72rem', marginTop: '6px', marginBottom: 0 }}>{couponError}</p>
+              )}
+            </div>
+          )}
+
+          {/* Pricing Details */}
+          <div className="flex flex-col gap-2.5 mb-5">
+            <div className="flex justify-between items-center">
+              <p style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.2em' }} className="uppercase">
+                Subtotal
+              </p>
+              <p style={{ fontSize: '0.92rem', color: '#1a1a1a' }}>
+                ${cartTotal.toLocaleString('es-AR')}
+              </p>
+            </div>
+
+            {appliedCoupon && cartDiscount > 0 && (
+              <div className="flex justify-between items-center">
+                <p style={{ color: '#6B8F71', fontSize: '0.65rem', letterSpacing: '0.2em' }} className="uppercase">
+                  Descuento ({appliedCoupon.code})
+                </p>
+                <p style={{ fontSize: '0.92rem', color: '#6B8F71' }}>
+                  -${cartDiscount.toLocaleString('es-AR')}
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center mt-2 pt-2.5" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+              <p style={{ color: '#1a1a1a', fontSize: '0.72rem', letterSpacing: '0.2em', fontWeight: 500 }} className="uppercase">
+                Total Final
+              </p>
+              <p
+                style={{
+                  fontFamily: '"Cormorant Garamond","Georgia",serif',
+                  fontSize: '1.45rem',
+                  color: '#1a1a1a',
+                  fontWeight: 400,
+                }}
+              >
+                ${cartFinalTotal.toLocaleString('es-AR')}
+              </p>
+            </div>
           </div>
 
           <button
