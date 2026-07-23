@@ -471,12 +471,14 @@ export function ProductGrid() {
   const { clientProducts, selectedCategory, setSelectedCategory, setCurrentView, searchQuery, loading } = useStore();
   const [activeCategory, setActiveCategory] = useState<string | null>(selectedCategory);
   const [limit, setLimit] = useState(20);
+  const [sortBy, setSortBy] = useState<'none' | 'price-asc' | 'price-desc'>('none');
 
   useEffect(() => { setActiveCategory(selectedCategory); }, [selectedCategory]);
 
-  // Resetear el límite de productos al cambiar de categoría o realizar una búsqueda
+  // Resetear el límite de productos y el orden al cambiar de categoría o realizar una búsqueda
   useEffect(() => {
     setLimit(20);
+    setSortBy('none');
   }, [activeCategory, searchQuery]);
 
   const handleCategoryChange = (cat: string | null) => {
@@ -501,7 +503,15 @@ export function ProductGrid() {
     );
   }
 
-  const displayedProducts = filtered.slice(0, limit);
+  // Ordenar productos según el filtro de precio
+  const sortedAndFiltered = [...filtered];
+  if (sortBy === 'price-asc') {
+    sortedAndFiltered.sort((a, b) => a.price - b.price);
+  } else if (sortBy === 'price-desc') {
+    sortedAndFiltered.sort((a, b) => b.price - a.price);
+  }
+
+  const displayedProducts = sortedAndFiltered.slice(0, limit);
 
   return (
     <div style={{ backgroundColor: '#F5F0E8', minHeight: '100vh' }}>
@@ -532,7 +542,7 @@ export function ProductGrid() {
         {/* Category tabs */}
         <div
           style={{ borderTop: '1px solid rgba(0,0,0,0.1)', borderBottom: '1px solid rgba(0,0,0,0.1)' }}
-          className="flex overflow-x-auto gap-8 py-4 mb-12"
+          className="flex overflow-x-auto gap-8 py-4 mb-10"
         >
           {[null, ...CATEGORIES].map(cat => (
             <button
@@ -552,6 +562,35 @@ export function ProductGrid() {
           ))}
         </div>
 
+        {/* Sorting Dropdown */}
+        {filtered.length > 0 && (
+          <div className="flex justify-end mb-8">
+            <div className="flex items-center gap-2">
+              <span style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.12em' }} className="uppercase">Ordenar por:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'none' | 'price-asc' | 'price-desc')}
+                style={{
+                  border: '1px solid rgba(0,0,0,0.15)',
+                  padding: '7px 12px',
+                  fontSize: '0.72rem',
+                  letterSpacing: '0.05em',
+                  backgroundColor: 'transparent',
+                  color: '#1a1a1a',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '1px',
+                }}
+                className="uppercase"
+              >
+                <option value="none">Por defecto</option>
+                <option value="price-asc">Precio: Menor a Mayor</option>
+                <option value="price-desc">Precio: Mayor a Menor</option>
+              </select>
+            </div>
+          </div>
+        )}
+
         {loading && filtered.length === 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -570,7 +609,7 @@ export function ProductGrid() {
                 <ProductCard key={product.id} product={product} priority={idx < 4} />
               ))}
             </div>
-            {filtered.length > limit && (
+            {sortedAndFiltered.length > limit && (
               <button
                 onClick={handleLoadMore}
                 style={{
