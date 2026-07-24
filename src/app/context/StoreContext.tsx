@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import {
   collection,
   doc,
@@ -203,6 +203,7 @@ const DEFAULT_HOME_CONTENT: HomeContent = {
 };
 
 export function StoreProvider({ children }: { children: ReactNode }) {
+  const isSdkSyncedRef = useRef(false);
   const [products, setProducts] = useState<Product[]>(() => loadFromStorage('solem_products_cache', []));
   const [cart, setCart] = useState<CartItem[]>(() => loadFromStorage('solem_cart_v2', []));
   const [user, setUser] = useState<User | null>(null);
@@ -252,6 +253,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         (docSnap) => ({ id: docSnap.id, ...docSnap.data() } as Product)
       );
       setProducts(productsData);
+      isSdkSyncedRef.current = true;
       setLoading(false);
       localStorage.setItem('solem_products_cache', JSON.stringify(productsData));
     }, (error) => {
@@ -267,6 +269,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Escuchar actualizaciones rápidas del script de eager pre-fetch en index.html
   useEffect(() => {
     const handleProductsUpdate = (e: Event) => {
+      if (isSdkSyncedRef.current) return; // Si el SDK oficial de Firebase ya sincronizó, ignoramos pre-fetch REST
       const detail = (e as CustomEvent).detail;
       if (detail && detail.length > 0) {
         setProducts(detail);
