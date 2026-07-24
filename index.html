@@ -20,6 +20,74 @@
     <link rel="preconnect" href="https://storage.googleapis.com" />
 
     <style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>
+
+    <!-- Eager Pre-fetch de Productos y Contenido (0ms delay) -->
+    <script>
+      (function() {
+        var projectId = "%VITE_FIREBASE_PROJECT_ID%";
+        if (!projectId || projectId.indexOf('%') === 0) {
+          return;
+        }
+
+        function parseVal(v) {
+          if (!v) return null;
+          if ('stringValue' in v) return v.stringValue;
+          if ('integerValue' in v) return parseInt(v.integerValue, 10);
+          if ('doubleValue' in v) return parseFloat(v.doubleValue);
+          if ('booleanValue' in v) return v.booleanValue;
+          if ('arrayValue' in v) {
+            var arr = v.arrayValue.values || [];
+            return arr.map(parseVal);
+          }
+          if ('mapValue' in v) {
+            var fields = v.mapValue.fields || {};
+            var obj = {};
+            for (var k in fields) {
+              obj[k] = parseVal(fields[k]);
+            }
+            return obj;
+          }
+          return null;
+        }
+
+        function parseDoc(doc) {
+          var fields = doc.fields || {};
+          var obj = { id: doc.name.split('/').pop() };
+          for (var k in fields) {
+            obj[k] = parseVal(fields[k]);
+          }
+          return obj;
+        }
+
+        try {
+          var productsUrl = "https://firestore.googleapis.com/v1/projects/" + projectId + "/databases/(default)/documents/products";
+          fetch(productsUrl)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+              if (data && data.documents) {
+                var parsedProducts = data.documents.map(parseDoc);
+                localStorage.setItem('solem_products_cache', JSON.stringify(parsedProducts));
+                window.dispatchEvent(new CustomEvent('solem_products_updated', { detail: parsedProducts }));
+              }
+            })
+            .catch(function(err) { console.warn('Eager products fetch failed:', err); });
+
+          var homeUrl = "https://firestore.googleapis.com/v1/projects/" + projectId + "/databases/(default)/documents/settings/homeContent";
+          fetch(homeUrl)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+              if (data && data.fields) {
+                var parsedHome = parseDoc(data);
+                localStorage.setItem('solem_home_cache', JSON.stringify(parsedHome));
+                window.dispatchEvent(new CustomEvent('solem_home_updated', { detail: parsedHome }));
+              }
+            })
+            .catch(function(err) { console.warn('Eager homeContent fetch failed:', err); });
+        } catch (e) {
+          console.error('Error en eager prefetch:', e);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

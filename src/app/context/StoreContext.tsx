@@ -264,6 +264,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => { localStorage.setItem('solem_cart_v2', JSON.stringify(cart)); }, [cart]);
   useEffect(() => { localStorage.setItem('solem_applied_coupon', JSON.stringify(appliedCoupon)); }, [appliedCoupon]);
 
+  // Escuchar actualizaciones rápidas del script de eager pre-fetch en index.html
+  useEffect(() => {
+    const handleProductsUpdate = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && detail.length > 0) {
+        setProducts(detail);
+        setLoading(false);
+      }
+    };
+    const handleHomeUpdate = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) {
+        setHomeContent(detail);
+      }
+    };
+
+    window.addEventListener('solem_products_updated', handleProductsUpdate);
+    window.addEventListener('solem_home_updated', handleHomeUpdate);
+
+    return () => {
+      window.removeEventListener('solem_products_updated', handleProductsUpdate);
+      window.removeEventListener('solem_home_updated', handleHomeUpdate);
+    };
+  }, []);
+
   // Sync homeContent desde Firestore (fuente única de verdad, incluye carouselImages y announcements)
   useEffect(() => {
     const homeDocRef = doc(db, 'settings', 'homeContent');
