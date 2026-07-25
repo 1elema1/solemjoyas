@@ -1,6 +1,5 @@
-"use client";
-
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, ArrowLeft, Minus, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, AlertCircle, CheckCircle2, Edit2 } from 'lucide-react';
 import { useStore, Product, Variant, ColorVariant, hasStock, CATEGORIES, getProductPrice } from '../context/StoreContext';
 import { ImageUpload } from './ImageUpload';
@@ -1081,7 +1080,8 @@ const EMPTY_FORM = {
 
 // ── Main AdminPanel ───────────────────────────────────────────────────────────
 export function AdminPanel() {
-  const { products, addProduct, updateProduct, setCurrentView } = useStore();
+  const navigate = useNavigate();
+  const { products, addProduct, updateProduct } = useStore();
   const [activeTab, setActiveTab] = useState<'list' | 'add' | 'edit' | 'carousel' | 'home' | 'prices' | 'coupons'>('list');
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [toast, setToast] = useState('');
@@ -1184,7 +1184,7 @@ export function AdminPanel() {
         <div className="max-w-5xl mx-auto px-6 py-12">
 
           <button
-            onClick={() => setCurrentView('home')}
+            onClick={() => navigate('/')}
             style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.15em', background: 'none', border: 'none', cursor: 'pointer' }}
             className="uppercase flex items-center gap-2 mb-10 hover:opacity-60 transition-opacity"
           >

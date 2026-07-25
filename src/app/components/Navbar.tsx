@@ -1,5 +1,3 @@
-"use client";
-
 import { ShoppingBag, LogOut, Settings, ChevronDown } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import logo from '../../imports/Photoroom_20250815_205827.PNG';
@@ -34,7 +32,7 @@ export function Navbar() {
           {/* Left: Shop + categories dropdown + Search */}
           <div className="flex items-center gap-4 lg:gap-6 flex-1">
             <button
-              onClick={() => { setCurrentView('products'); setSelectedCategory(null); }}
+              onClick={() => setCurrentView('products') || setSelectedCategory(null)}
               style={{ color: '#1a1a1a', letterSpacing: '0.12em', fontSize: '0.72rem' }}
               className="uppercase tracking-widest hover:opacity-60 transition-opacity hidden md:block"
             >
@@ -93,7 +91,7 @@ export function Navbar() {
               marginTop: '-28px',
             }}
           >
-            <img src={typeof logo === 'string' ? logo : (logo as any)?.src || logo} alt="SOLEM" className="h-14 w-14 object-contain" />
+            <img src={logo} alt="SOLEM" className="h-14 w-14 object-contain" />
           </button>
 
           {/* Right: User + Cart */}
