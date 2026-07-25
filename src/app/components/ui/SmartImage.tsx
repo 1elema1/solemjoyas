@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 
 const DEFAULT_FALLBACK_SVG =
@@ -84,7 +86,8 @@ export function SmartImage({
         style={{
           width: '100%',
           height: '100%',
-          objectFit: error ? 'center' : objectFit,
+          objectFit: error ? 'contain' : objectFit,
+          objectPosition: error ? 'center' : undefined,
           display: 'block',
           opacity: loaded ? 1 : 0,
           transition: 'opacity 0.35s ease-in-out',

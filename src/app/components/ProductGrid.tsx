@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 import { ShoppingBag, X, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStore, Product, CATEGORIES, getProductPrice } from '../context/StoreContext';

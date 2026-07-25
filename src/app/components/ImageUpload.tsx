@@ -1,3 +1,5 @@
+"use client";
+
 import { Upload, X, Loader2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';

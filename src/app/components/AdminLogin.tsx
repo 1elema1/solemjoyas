@@ -1,11 +1,11 @@
+"use client";
+
 import { useState } from 'react';
 import { useStore } from '../context/StoreContext';
-import { useNavigate } from 'react-router-dom';
 import logo from '../../imports/Photoroom_20250815_205827.PNG';
 
 export function AdminLogin() {
-  const { adminLogin } = useStore();
-  const navigate = useNavigate();
+  const { adminLogin, setCurrentView } = useStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,7 +20,7 @@ export function AdminLogin() {
     setLoading(false);
 
     if (result.success) {
-      navigate('/admin');
+      setCurrentView('admin');
     } else {
       setError(result.message);
     }
@@ -47,7 +47,7 @@ export function AdminLogin() {
         }}
       >
         <div className="flex flex-col items-center mb-8">
-          <img src={logo} alt="SOLEM" className="h-20 w-20 object-contain mb-4" />
+          <img src={typeof logo === 'string' ? logo : (logo as any)?.src || logo} alt="SOLEM" className="h-20 w-20 object-contain mb-4" />
           <h1
             style={{
               fontFamily: '"Cormorant Garamond","Georgia",serif',
@@ -144,7 +144,7 @@ export function AdminLogin() {
 
         <div className="mt-6 text-center">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => setCurrentView('home')}
             style={{
               color: '#6B8F71',
               fontSize: '0.72rem',

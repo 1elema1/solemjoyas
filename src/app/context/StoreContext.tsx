@@ -1,3 +1,5 @@
+"use client";
+
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import {
   collection,
@@ -202,30 +204,33 @@ const DEFAULT_HOME_CONTENT: HomeContent = {
   footerCopyright: '© 2025 SOLEM · Todos los derechos reservados',
 };
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const isSdkSyncedRef = useRef(false);
-  const [products, setProducts] = useState<Product[]>(() => loadFromStorage('solem_products_cache', []));
+export function StoreProvider({
+  children,
+  initialProducts = [],
+  initialHome = DEFAULT_HOME_CONTENT,
+}: {
+  children: ReactNode;
+  initialProducts?: Product[];
+  initialHome?: HomeContent | null;
+}) {
+  const [products, setProducts] = useState<Product[]>(
+    initialProducts.length > 0 ? initialProducts : []
+  );
   const [cart, setCart] = useState<CartItem[]>(() => loadFromStorage('solem_cart_v2', []));
   const [user, setUser] = useState<User | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'home' | 'products' | 'admin'>('home');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [homeContent, setHomeContent] = useState<HomeContent>(() => loadFromStorage('solem_home_cache', DEFAULT_HOME_CONTENT));
+  const [homeContent, setHomeContent] = useState<HomeContent>(
+    initialHome ?? DEFAULT_HOME_CONTENT
+  );
   
   // Nuevos estados para cupones
-  const [coupons, setCoupons] = useState<Coupon[]>(() => loadFromStorage('solem_coupons_cache', []));
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(() => loadFromStorage('solem_applied_coupon', null));
 
-  // Si ya tenemos productos en cache, no bloqueamos la UI con un loading indicator (carga instantánea)
-  const [loading, setLoading] = useState(() => {
-    const cached = localStorage.getItem('solem_products_cache');
-    try {
-      return !cached || JSON.parse(cached).length === 0;
-    } catch {
-      return true;
-    }
-  });
+  const [loading, setLoading] = useState(initialProducts.length === 0);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -235,17 +240,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  // Timeout de seguridad: Si la conexión a Firestore tarda más de 2 segundos (ej: mala red),
-  // forzamos la desactivación de loading para mostrar lo que tengamos en cache.
-  useEffect(() => {
-    if (!loading) return;
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [loading]);
-
-  // Real-time sync de productos desde Firestore con caché local y tolerancia a errores
+  // Real-time sync de productos desde Firestore
   useEffect(() => {
     const q = query(collection(db, 'products'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -253,44 +248,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         (docSnap) => ({ id: docSnap.id, ...docSnap.data() } as Product)
       );
       setProducts(productsData);
-      isSdkSyncedRef.current = true;
       setLoading(false);
-      localStorage.setItem('solem_products_cache', JSON.stringify(productsData));
     }, (error) => {
       console.warn("Firestore onSnapshot error (products):", error);
-      setLoading(false); // Liberar carga ante fallos de conexión
+      setLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
   useEffect(() => { localStorage.setItem('solem_cart_v2', JSON.stringify(cart)); }, [cart]);
   useEffect(() => { localStorage.setItem('solem_applied_coupon', JSON.stringify(appliedCoupon)); }, [appliedCoupon]);
-
-  // Escuchar actualizaciones rápidas del script de eager pre-fetch en index.html
-  useEffect(() => {
-    const handleProductsUpdate = (e: Event) => {
-      if (isSdkSyncedRef.current) return; // Si el SDK oficial de Firebase ya sincronizó, ignoramos pre-fetch REST
-      const detail = (e as CustomEvent).detail;
-      if (detail && detail.length > 0) {
-        setProducts(detail);
-        setLoading(false);
-      }
-    };
-    const handleHomeUpdate = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail) {
-        setHomeContent(detail);
-      }
-    };
-
-    window.addEventListener('solem_products_updated', handleProductsUpdate);
-    window.addEventListener('solem_home_updated', handleHomeUpdate);
-
-    return () => {
-      window.removeEventListener('solem_products_updated', handleProductsUpdate);
-      window.removeEventListener('solem_home_updated', handleHomeUpdate);
-    };
-  }, []);
 
   // Sync homeContent desde Firestore (fuente única de verdad, incluye carouselImages y announcements)
   useEffect(() => {

@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ImageCarousel } from './ImageCarousel';

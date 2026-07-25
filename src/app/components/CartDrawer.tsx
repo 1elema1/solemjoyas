@@ -1,3 +1,5 @@
+"use client";
+
 import { X, Minus, Plus, Trash2, MessageCircle, AlertCircle } from 'lucide-react';
 import { useStore, getProductPrice } from '../context/StoreContext';
 import { useState } from 'react';

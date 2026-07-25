@@ -1,6 +1,8 @@
+"use client";
+
 import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
+import { AdminLogin } from './AdminLogin';
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useStore();
@@ -22,7 +24,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <AdminLogin />;
   }
 
   return <>{children}</>;
