@@ -153,20 +153,22 @@ export function Navbar() {
             onClear={() => setSearchQuery('')}
           />
         </div>
-        <div className="overflow-x-auto md:hidden">
-          <div className="flex px-4 pb-2 gap-4 w-max">
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat}
-                onClick={() => handleCategoryClick(cat)}
-                style={{ color: '#1a1a1a', fontSize: '0.7rem', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}
-                className="uppercase"
-              >
-                {cat}
-              </button>
-            ))}
+        {location.pathname !== '/products' && (
+          <div className="overflow-x-auto md:hidden">
+            <div className="flex px-4 pb-2 gap-4 w-max">
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => handleCategoryClick(cat)}
+                  style={{ color: '#1a1a1a', fontSize: '0.7rem', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}
+                  className="uppercase"
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {menuOpen && <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />}
