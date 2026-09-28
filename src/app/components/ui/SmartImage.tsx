@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const DEFAULT_FALLBACK_SVG =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODgiIGhlaWdodD0iODgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgc3Ryb2tlPSIjNmI4ZjcxIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBvcGFjaXR5PSIuNCIgZmlsbD0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIzLjciPjxyZWN0IHg9IjE2IiB5PSIxNiIgd2lkdGg9IjU2IiBoZWlnaHQ9IjU2IiByeD0iNiIvPjxwYXRoIGQ9Im0xNiA1OCAxNi0xOCAzMiAzMiIvPjxjaXJjbGUgY3g9IjUzIiBjeT0iMzUiIHI9IjciLz48L3N2Zz4=';
@@ -28,12 +28,23 @@ export function SmartImage({
   const isEmpty = !src || src.trim() === '';
   const [loaded, setLoaded] = useState(isEmpty);
   const [error, setError] = useState(isEmpty);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   // Reset state when src changes
   useEffect(() => {
     const empty = !src || src.trim() === '';
-    setLoaded(empty);
-    setError(empty);
+    if (empty) {
+      setLoaded(true);
+      setError(true);
+    } else {
+      setError(false);
+      // If already cached by browser, show instantly without transition
+      if (imgRef.current?.complete) {
+        setLoaded(true);
+      } else {
+        setLoaded(false);
+      }
+    }
   }, [src]);
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -75,10 +86,13 @@ export function SmartImage({
 
       {/* Actual Image */}
       <img
+        ref={imgRef}
         src={currentSrc}
         alt={alt}
         loading={priority ? 'eager' : 'lazy'}
-        decoding="async"
+        // @ts-ignore - fetchpriority is valid HTML but might not be in React types yet
+        fetchpriority={priority ? 'high' : 'auto'}
+        decoding={priority ? 'sync' : 'async'}
         onLoad={handleImageLoad}
         onError={handleImageError}
         style={{
@@ -87,7 +101,7 @@ export function SmartImage({
           objectFit: error ? 'center' : objectFit,
           display: 'block',
           opacity: loaded ? 1 : 0,
-          transition: 'opacity 0.35s ease-in-out',
+          transition: priority ? 'opacity 0.15s ease-in-out' : 'opacity 0.35s ease-in-out',
         }}
         {...rest}
       />

@@ -18,6 +18,11 @@
     <!-- Preconnect para Firebase (mejora TTFB) -->
     <link rel="preconnect" href="https://firestore.googleapis.com" />
     <link rel="preconnect" href="https://storage.googleapis.com" />
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap" rel="stylesheet" />
 
     <style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>
 
@@ -27,6 +32,15 @@
         var projectId = "%VITE_FIREBASE_PROJECT_ID%";
         if (!projectId || projectId.indexOf('%') === 0) {
           return;
+        }
+
+        function preloadImage(url) {
+          if (!url || typeof url !== 'string') return;
+          var link = document.createElement('link');
+          link.rel = 'preload';
+          link.as = 'image';
+          link.href = url;
+          document.head.appendChild(link);
         }
 
         function parseVal(v) {
@@ -66,7 +80,9 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               structuredQuery: {
-                from: [{ collectionId: 'products' }]
+                from: [{ collectionId: 'products' }],
+                where: { fieldFilter: { field: { fieldPath: 'active' }, op: 'EQUAL', value: { booleanValue: true } } },
+                limit: 20
               }
             })
           })
@@ -82,6 +98,11 @@
                 if (parsedProducts.length > 0) {
                   localStorage.setItem('solem_products_cache', JSON.stringify(parsedProducts));
                   window.dispatchEvent(new CustomEvent('solem_products_updated', { detail: parsedProducts }));
+                  // Preload first 4 product images so they appear instantly
+                  parsedProducts.slice(0, 4).forEach(function(p) {
+                    var imgs = p.images && p.images.length > 0 ? p.images : [p.image];
+                    preloadImage(imgs[0]);
+                  });
                 }
               }
             })
@@ -95,6 +116,8 @@
                 var parsedHome = parseDoc(data);
                 localStorage.setItem('solem_home_cache', JSON.stringify(parsedHome));
                 window.dispatchEvent(new CustomEvent('solem_home_updated', { detail: parsedHome }));
+                // Preload hero image immediately
+                if (parsedHome.heroImage) preloadImage(parsedHome.heroImage);
               }
             })
             .catch(function(err) { console.warn('Eager homeContent fetch failed:', err); });

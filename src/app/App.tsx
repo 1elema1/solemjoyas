@@ -1,13 +1,15 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { ProductGrid } from './components/ProductGrid';
 import { CartDrawer } from './components/CartDrawer';
-import { AdminPanel } from './components/AdminPanel';
-import { AdminLogin } from './components/AdminLogin';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AnnouncementBar } from './components/AnnouncementBar';
+
+const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })));
+const AdminLogin = lazy(() => import('./components/AdminLogin').then(m => ({ default: m.AdminLogin })));
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -45,11 +47,17 @@ function AppContent() {
           <ProductGrid />
         </MainLayout>
       } />
-      <Route path="/login" element={<AdminLogin />} />
+      <Route path="/login" element={
+        <Suspense fallback={<div className="flex h-screen items-center justify-center">Cargando...</div>}>
+          <AdminLogin />
+        </Suspense>
+      } />
       <Route path="/admin" element={
         <ProtectedRoute>
           <MainLayout>
-            <AdminPanel />
+            <Suspense fallback={<div className="flex h-screen items-center justify-center">Cargando panel...</div>}>
+              <AdminPanel />
+            </Suspense>
           </MainLayout>
         </ProtectedRoute>
       } />

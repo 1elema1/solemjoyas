@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ShoppingBag, X, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStore, Product, CATEGORIES, getProductPrice } from '../context/StoreContext';
 import { SmartImage } from './ui/SmartImage';
+import { useNavigate } from 'react-router-dom';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function hasVariants(product: Product): boolean {
@@ -468,7 +469,8 @@ function ProductCardSkeleton() {
 
 // ── Main grid ─────────────────────────────────────────────────────────────────
 export function ProductGrid() {
-  const { clientProducts, selectedCategory, setSelectedCategory, setCurrentView, searchQuery, loading } = useStore();
+  const { clientProducts, selectedCategory, setSelectedCategory, searchQuery, loading } = useStore();
+  const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState<string | null>(selectedCategory);
   const [limit, setLimit] = useState(20);
   const [sortBy, setSortBy] = useState<'none' | 'price-asc' | 'price-desc'>('none');
@@ -518,7 +520,7 @@ export function ProductGrid() {
       <div className="max-w-7xl mx-auto px-6 py-14">
 
         <button
-          onClick={() => setCurrentView('home')}
+          onClick={() => navigate('/')}
           style={{ color: '#888', fontSize: '0.68rem', letterSpacing: '0.15em' }}
           className="uppercase flex items-center gap-2 mb-10 hover:opacity-60 transition-opacity"
         >
@@ -591,7 +593,8 @@ export function ProductGrid() {
           </div>
         )}
 
-        {loading && filtered.length === 0 ? (
+        {/* Muestra skeleton solo si no hay NADA en caché aún (primera vez sin internet) */}
+        {loading && clientProducts.length === 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
             {Array.from({ length: 8 }).map((_, i) => (
               <ProductCardSkeleton key={i} />

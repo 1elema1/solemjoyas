@@ -275,14 +275,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (isSdkSyncedRef.current) return; // Si el SDK oficial de Firebase ya sincronizó, ignoramos pre-fetch REST
       const detail = (e as CustomEvent).detail;
       if (detail && detail.length > 0) {
-        setProducts(detail);
+        setProducts(prev => {
+          // Solo actualizar si los datos son diferentes (evita re-render innecesario)
+          if (JSON.stringify(prev) === JSON.stringify(detail)) return prev;
+          return detail;
+        });
         setLoading(false);
       }
     };
     const handleHomeUpdate = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail) {
-        setHomeContent(detail);
+        setHomeContent(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(detail)) return prev;
+          return detail;
+        });
       }
     };
 
