@@ -353,7 +353,7 @@ function HomeContentManager() {
   const { homeContent, updateHomeContent, carouselImages } = useStore();
   const [form, setForm] = useState(homeContent);
   const [saved, setSaved] = useState(false);
-  const [activeSection, setActiveSection] = useState<'hero' | 'categories' | 'footer' | 'announcements'>('hero');
+  const [activeSection, setActiveSection] = useState<'hero' | 'categories' | 'footer' | 'announcements' | 'social'>('hero');
 
   const handleSave = async () => {
     try {
@@ -385,10 +385,11 @@ function HomeContentManager() {
           { id: 'categories', label: 'Categorías' },
           { id: 'footer', label: 'Footer' },
           { id: 'announcements', label: 'Anuncios' },
+          { id: 'social', label: 'Redes' },
         ].map(({ id, label }) => (
           <button
             key={id}
-            onClick={() => setActiveSection(id as 'hero' | 'categories' | 'footer' | 'announcements')}
+            onClick={() => setActiveSection(id as 'hero' | 'categories' | 'footer' | 'announcements' | 'social')}
             style={{
               fontSize: '0.68rem', letterSpacing: '0.12em',
               color: activeSection === id ? '#6B8F71' : '#888',
@@ -693,6 +694,35 @@ function HomeContentManager() {
                 + Agregar anuncio
               </button>
             </div>
+          </div>
+        )}
+
+        {activeSection === 'social' && (
+          <div className="flex flex-col gap-6">
+            <p style={{ color: '#aaa', fontSize: '0.72rem', marginBottom: '-8px' }}>
+              Pegá la URL completa de cada red. Dejá en blanco las que no uses.
+            </p>
+
+            {[
+              { key: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/solemjoyas' },
+              { key: 'tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@solemjoyas' },
+              { key: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/solemjoyas' },
+              { key: 'whatsapp', label: 'WhatsApp (solo número)', placeholder: '3516854262' },
+            ].map(({ key, label, placeholder }) => (
+              <div key={key}>
+                <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.15em' }} className="uppercase block mb-2">{label}</label>
+                <input
+                  type="text"
+                  value={(form.socialLinks as Record<string, string>)?.[key] ?? ''}
+                  onChange={e => setForm(f => ({
+                    ...f,
+                    socialLinks: { ...f.socialLinks, [key]: e.target.value }
+                  }))}
+                  placeholder={placeholder}
+                  style={{ width: '100%', border: '1px solid rgba(0,0,0,0.12)', padding: '10px 12px', fontSize: '0.85rem', background: 'transparent', color: '#1a1a1a', outline: 'none' }}
+                />
+              </div>
+            ))}
           </div>
         )}
 

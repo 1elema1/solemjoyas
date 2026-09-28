@@ -72,6 +72,13 @@ export interface Coupon {
   active: boolean;
 }
 
+export interface SocialLinks {
+  instagram?: string;
+  tiktok?: string;
+  whatsapp?: string;
+  facebook?: string;
+}
+
 export interface HomeContent {
   heroImage: string;
   heroTagline: string;
@@ -94,6 +101,8 @@ export interface HomeContent {
   footerCopyright: string;
   carouselImages?: string[];
   announcements?: string[];
+  socialLinks?: SocialLinks;
+  featuredProductIds?: string[];
 }
 
 interface StoreContextType {
