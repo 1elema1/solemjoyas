@@ -3,9 +3,9 @@ import { Navigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user, loading } = useStore();
+  const { user, authLoading } = useStore();
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div
         style={{

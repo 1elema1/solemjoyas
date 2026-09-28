@@ -141,6 +141,7 @@ interface StoreContextType {
 
   // Cambios Masivos
   applyBulkPriceChange: (category: string | 'all', action: 'increase' | 'discount', type: 'percentage' | 'fixed', value: number) => Promise<void>;
+  authLoading: boolean;
 }
 
 const StoreContext = createContext<StoreContextType | null>(null);
@@ -211,6 +212,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [currentView, setCurrentView] = useState<'home' | 'products' | 'admin'>('home');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [authLoading, setAuthLoading] = useState(true);
   const [homeContent, setHomeContent] = useState<HomeContent>(() => loadFromStorage('solem_home_cache', DEFAULT_HOME_CONTENT));
   
   // Nuevos estados para cupones
@@ -231,6 +233,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) setUser({ email: firebaseUser.email!, role: 'admin' });
       else setUser(null);
+      setAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -570,7 +573,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     user, adminLogin, adminLogout, generateWhatsAppLink,
     searchQuery, setSearchQuery, carouselImages, updateCarouselImages,
     getAvailableStock,
-    loading,
+    loading, authLoading,
     homeContent, updateHomeContent,
     coupons, appliedCoupon, applyCoupon, removeCoupon, addCoupon, deleteCoupon, cartDiscount, cartFinalTotal,
     applyBulkPriceChange,
@@ -578,7 +581,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }), [
     products, clientProducts, cart, cartTotal, cartCount,
     cartOpen, currentView, selectedCategory,
-    user, searchQuery, carouselImages, loading, homeContent,
+    user, searchQuery, carouselImages, loading, authLoading, homeContent,
     coupons, appliedCoupon, cartDiscount, cartFinalTotal,
   ]);
 

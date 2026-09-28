@@ -37,8 +37,7 @@ function AppContent() {
     <Routes>
       <Route path="/" element={
         <MainLayout>
-          {currentView === 'home' && <Hero />}
-          {currentView === 'products' && <ProductGrid />}
+          <Hero />
         </MainLayout>
       } />
       <Route path="/products" element={

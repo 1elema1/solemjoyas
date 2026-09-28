@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, ArrowLeft, Minus, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, AlertCircle, CheckCircle2, Edit2 } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Minus, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, AlertCircle, CheckCircle2, Edit2, LogOut } from 'lucide-react';
 import { useStore, Product, Variant, ColorVariant, hasStock, CATEGORIES, getProductPrice } from '../context/StoreContext';
 import { ImageUpload } from './ImageUpload';
 
@@ -1081,7 +1081,7 @@ const EMPTY_FORM = {
 // ── Main AdminPanel ───────────────────────────────────────────────────────────
 export function AdminPanel() {
   const navigate = useNavigate();
-  const { products, addProduct, updateProduct } = useStore();
+  const { products, addProduct, updateProduct, adminLogout } = useStore();
   const [activeTab, setActiveTab] = useState<'list' | 'add' | 'edit' | 'carousel' | 'home' | 'prices' | 'coupons'>('list');
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [toast, setToast] = useState('');
@@ -1183,13 +1183,25 @@ export function AdminPanel() {
       <div style={{ backgroundColor: '#F5F0E8', minHeight: '100vh' }}>
         <div className="max-w-5xl mx-auto px-6 py-12">
 
-          <button
-            onClick={() => navigate('/')}
-            style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.15em', background: 'none', border: 'none', cursor: 'pointer' }}
-            className="uppercase flex items-center gap-2 mb-10 hover:opacity-60 transition-opacity"
-          >
-            <ArrowLeft size={12} /> Volver a la tienda
-          </button>
+          <div className="flex items-center justify-between mb-10">
+            <button
+              onClick={() => navigate('/')}
+              style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.15em', background: 'none', border: 'none', cursor: 'pointer' }}
+              className="uppercase flex items-center gap-2 hover:opacity-60 transition-opacity"
+            >
+              <ArrowLeft size={12} /> Volver a la tienda
+            </button>
+            <button
+              onClick={async () => {
+                await adminLogout();
+                navigate('/');
+              }}
+              style={{ color: '#c0392b', fontSize: '0.65rem', letterSpacing: '0.15em', background: 'none', border: 'none', cursor: 'pointer' }}
+              className="uppercase flex items-center gap-2 hover:opacity-60 transition-opacity"
+            >
+              <LogOut size={12} /> Cerrar Sesión
+            </button>
+          </div>
 
           <div className="mb-10">
             <p style={{ color: '#6B8F71', fontSize: '0.65rem', letterSpacing: '0.25em' }} className="uppercase mb-3">Panel de administración</p>

@@ -3,11 +3,14 @@ import { useStore } from '../context/StoreContext';
 import { ImageCarousel } from './ImageCarousel';
 import { SmartImage } from './ui/SmartImage';
 
-export function Hero() {
-  const { setCurrentView, setSelectedCategory, carouselImages, homeContent } = useStore();
+import { useNavigate } from 'react-router-dom';
 
-  const goCategory = (cat: string) => { setSelectedCategory(cat); setCurrentView('products'); };
-  const goAll = () => { setSelectedCategory(null); setCurrentView('products'); };
+export function Hero() {
+  const { setSelectedCategory, carouselImages, homeContent } = useStore();
+  const navigate = useNavigate();
+
+  const goCategory = (cat: string) => { setSelectedCategory(cat); navigate('/products'); };
+  const goAll = () => { setSelectedCategory(null); navigate('/products'); };
 
   // Parse heroTitle to extract italicized word
   const parseTitleParts = (title: string) => {
