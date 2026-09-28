@@ -49,7 +49,7 @@ function CategoryChip({ label, image, onClick }: { label: string; image?: string
     >
       <div
         className="relative overflow-hidden"
-        style={{ width: '180px', height: '180px', borderRadius: '50%', border: '2px solid rgba(107,143,113,0.25)' }}
+        style={{ width: '160px', height: '160px', borderRadius: '80%', border: '3px solid rgba(107,143,113,0.25)' }}
       >
         {image ? (
           <SmartImage src={image} alt={label} objectFit="cover" className="w-full h-full group-hover:scale-110 transition-transform duration-500" />
