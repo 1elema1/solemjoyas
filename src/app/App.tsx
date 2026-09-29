@@ -23,7 +23,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
       flexDirection: 'column'
     }}>
       <Navbar />
-      <AnnouncementBar />
+      <div className="hidden lg:block"><AnnouncementBar /></div>
       <main style={{ flex: 1 }}>
         {children}
       </main>

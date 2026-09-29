@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useStore } from '../context/StoreContext';
 
 export function AnnouncementBar() {
@@ -13,42 +12,25 @@ export function AnnouncementBar() {
         '🚚 ENVÍOS GRATIS EN CÓRDOBA SUPERANDO $50.000 🚚',
         '💖 JOYAS ÚNICAS EN PLATA 925 HECHAS A MANO 💖',
       ];
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [messages.join('|')]);
-
-  useEffect(() => {
-    if (messages.length < 2) return;
-    const timer = window.setInterval(() => {
-      setActiveIndex(index => (index + 1) % messages.length);
-    }, 4000);
-    return () => window.clearInterval(timer);
-  }, [messages.length]);
 
   return (
     <div
+      role="region"
       aria-label="Anuncios de la tienda"
-      style={{
-        backgroundColor: '#1a1a1a',
-        color: '#F5F0E8',
-        height: '34px',
-        overflow: 'hidden',
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        zIndex: 60,
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
-      }}
+      className="announcement-marquee"
     >
-      <div
-        className="announcement-carousel-track"
-        style={{ transform: `translateX(-${activeIndex * 100}%)` }}
-      >
-        {messages.map((message, index) => (
-          <div className="announcement-carousel-slide" key={`${index}-${message}`}>
-            {message}
+      <div className="announcement-marquee-track">
+        {[0, 1].map(copy => (
+          <div
+            className="announcement-marquee-group"
+            key={copy}
+            aria-hidden={copy === 1}
+          >
+            {messages.map((message, index) => (
+              <span className="announcement-marquee-item" key={`${index}-${message}`}>
+                {message}
+              </span>
+            ))}
           </div>
         ))}
       </div>
