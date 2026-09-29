@@ -106,6 +106,9 @@ export interface HomeContent {
   announcementFontSize?: number;
   announcementSpeed?: number;
   announcementFontFamily?: string;
+  announcementSeparatorType?: 'symbol' | 'image';
+  announcementSeparator?: string;
+  announcementSeparatorImage?: string;
   socialLinks?: SocialLinks;
   featuredProductIds?: string[];
 }
@@ -217,6 +220,9 @@ const DEFAULT_HOME_CONTENT: HomeContent = {
   announcementFontSize: 11,
   announcementSpeed: 24,
   announcementFontFamily: 'system-ui, sans-serif',
+  announcementSeparatorType: 'symbol',
+  announcementSeparator: '✦',
+  announcementSeparatorImage: '',
   footerLocation: 'Ubicados en\nCórdoba Capital',
   footerShipping: 'Realizamos envíos\nmediante Uber Envíos',
   footerMaterial: 'Plata 925\ncertificada y garantizada',

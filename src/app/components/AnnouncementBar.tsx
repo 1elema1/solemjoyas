@@ -41,6 +41,9 @@ export function AnnouncementBar() {
   const fontSize = Math.min(24, Math.max(10, Number(homeContent.announcementFontSize) || 11));
   const speed = Math.min(60, Math.max(8, Number(homeContent.announcementSpeed) || 24));
   const fontFamily = homeContent.announcementFontFamily || 'system-ui, sans-serif';
+  const separatorType = homeContent.announcementSeparatorType || 'symbol';
+  const separator = homeContent.announcementSeparator || '✦';
+  const separatorImage = homeContent.announcementSeparatorImage || '';
   const copies = Array.from({ length: groupsPerCycle * 2 }, (_, index) => index);
 
   return (
@@ -61,7 +64,12 @@ export function AnnouncementBar() {
           >
             {messages.map((message, index) => (
               <span className="announcement-marquee-item" key={String(index) + '-' + message}>
-                {message}
+                <span>{message}</span>
+                {separatorType === 'image' && separatorImage ? (
+                  <img className="announcement-marquee-separator-image" src={separatorImage} alt="" aria-hidden="true" />
+                ) : (
+                  <span className="announcement-marquee-separator" aria-hidden="true">{separator}</span>
+                )}
               </span>
             ))}
           </div>

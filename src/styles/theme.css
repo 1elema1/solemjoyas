@@ -266,6 +266,18 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
+.announcement-marquee-separator {
+  color: currentColor;
+  font-size: 1.25em;
+  line-height: 1;
+}
+.announcement-marquee-separator-image {
+  display: block;
+  flex: 0 0 auto;
+  width: 1.25em;
+  height: 1.25em;
+  object-fit: contain;
+}
 @media (prefers-reduced-motion: reduce) {
   .announcement-marquee-track {
     animation-duration: 80s;

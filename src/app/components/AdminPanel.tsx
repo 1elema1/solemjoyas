@@ -382,6 +382,9 @@ function HomeContentManager() {
         announcementFontSize: Number(form.announcementFontSize) || 11,
         announcementSpeed: Number(form.announcementSpeed) || 24,
         announcementFontFamily: form.announcementFontFamily ?? 'system-ui, sans-serif',
+        announcementSeparatorType: form.announcementSeparatorType ?? 'symbol',
+        announcementSeparator: form.announcementSeparator ?? '✦',
+        announcementSeparatorImage: form.announcementSeparatorImage ?? '',
       });
       setAnnouncementMessage('Anuncios guardados correctamente.');
     } catch (error) {
@@ -790,8 +793,61 @@ function HomeContentManager() {
                     <option value="Arial, sans-serif">Arial</option>
                     <option value="Georgia, serif">Georgia</option>
                     <option value='"Cormorant Garamond", Georgia, serif'>Cormorant Garamond</option>
+                    <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                    <option value="Verdana, sans-serif">Verdana</option>
+                    <option value="Tahoma, sans-serif">Tahoma</option>
+                    <option value="'Palatino Linotype', 'Book Antiqua', serif">Palatino Linotype</option>
+                    <option value="'Times New Roman', serif">Times New Roman</option>
+                    <option value="'Courier New', monospace">Courier New</option>
+                    <option value="Impact, sans-serif">Impact</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="mt-6">
+                <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.12em' }} className="uppercase block mb-2">Separador entre anuncios</label>
+                <select
+                  value={form.announcementSeparatorType ?? 'symbol'}
+                  onChange={e => setForm(f => ({ ...f, announcementSeparatorType: e.target.value as 'symbol' | 'image' }))}
+                  style={{ width: '100%', maxWidth: '320px', border: '1px solid rgba(0,0,0,0.12)', padding: '10px 12px', fontSize: '0.85rem', background: '#F5F0E8', color: '#1a1a1a', outline: 'none', cursor: 'pointer' }}
+                >
+                  <option value="symbol">Emoji o símbolo</option>
+                  <option value="image">Imagen</option>
+                </select>
+                {(form.announcementSeparatorType ?? 'symbol') === 'symbol' ? (
+                  <div className="mt-4">
+                    <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.12em' }} className="uppercase block mb-2">Elegí o escribí tu separador</label>
+                    <input
+                      type="text"
+                      value={form.announcementSeparator ?? '✦'}
+                      onChange={e => setForm(f => ({ ...f, announcementSeparator: e.target.value }))}
+                      maxLength={8}
+                      placeholder="✦"
+                      style={{ width: '100%', maxWidth: '320px', border: '1px solid rgba(0,0,0,0.12)', padding: '10px 12px', fontSize: '1.1rem', background: 'transparent', color: '#1a1a1a', outline: 'none' }}
+                    />
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {['✦', '✧', '◆', '◇', '✨', '💎', '❖'].map(symbol => (
+                        <button
+                          key={symbol}
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, announcementSeparator: symbol }))}
+                          aria-label={`Elegir separador ${symbol}`}
+                          style={{ border: '1px solid rgba(0,0,0,0.14)', background: form.announcementSeparator === symbol ? 'rgba(107,143,113,0.16)' : 'transparent', padding: '6px 10px', cursor: 'pointer', fontSize: '1rem' }}
+                        >
+                          {symbol}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 max-w-md">
+                    <ImageUpload
+                      value={form.announcementSeparatorImage ?? ''}
+                      onChange={url => setForm(f => ({ ...f, announcementSeparatorImage: url }))}
+                      label="Subir imagen para separar anuncios"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-4 mt-4">
