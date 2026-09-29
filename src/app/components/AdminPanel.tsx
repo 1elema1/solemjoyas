@@ -375,7 +375,14 @@ function HomeContentManager() {
     setAnnouncementSaving(true);
     setAnnouncementMessage('');
     try {
-      await updateHomeContent({ announcements: form.announcements ?? [] });
+      await updateHomeContent({
+        announcements: form.announcements ?? [],
+        announcementBgColor: form.announcementBgColor ?? '#1a1a1a',
+        announcementTextColor: form.announcementTextColor ?? '#F5F0E8',
+        announcementFontSize: Number(form.announcementFontSize) || 11,
+        announcementSpeed: Number(form.announcementSpeed) || 24,
+        announcementFontFamily: form.announcementFontFamily ?? 'system-ui, sans-serif',
+      });
       setAnnouncementMessage('Anuncios guardados correctamente.');
     } catch (error) {
       console.error('Error al guardar anuncios:', error);
@@ -713,6 +720,79 @@ function HomeContentManager() {
               >
                 + Agregar anuncio
               </button>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-6">
+                <div>
+                  <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.12em' }} className="uppercase block mb-2">Color de fondo</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={form.announcementBgColor ?? '#1a1a1a'}
+                      onChange={e => setForm(f => ({ ...f, announcementBgColor: e.target.value }))}
+                      aria-label="Color de fondo de los anuncios"
+                      style={{ width: '48px', height: '38px', border: '1px solid rgba(0,0,0,0.12)', padding: '3px', background: 'transparent', cursor: 'pointer' }}
+                    />
+                    <span style={{ color: '#666', fontSize: '0.8rem' }}>{form.announcementBgColor ?? '#1a1a1a'}</span>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.12em' }} className="uppercase block mb-2">Color del texto</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={form.announcementTextColor ?? '#F5F0E8'}
+                      onChange={e => setForm(f => ({ ...f, announcementTextColor: e.target.value }))}
+                      aria-label="Color del texto de los anuncios"
+                      style={{ width: '48px', height: '38px', border: '1px solid rgba(0,0,0,0.12)', padding: '3px', background: 'transparent', cursor: 'pointer' }}
+                    />
+                    <span style={{ color: '#666', fontSize: '0.8rem' }}>{form.announcementTextColor ?? '#F5F0E8'}</span>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.12em' }} className="uppercase block mb-2">
+                    Tamaño del texto: {Number(form.announcementFontSize) || 11}px
+                  </label>
+                  <input
+                    type="range"
+                    min={10}
+                    max={24}
+                    step={1}
+                    value={Number(form.announcementFontSize) || 11}
+                    onChange={e => setForm(f => ({ ...f, announcementFontSize: Number(e.target.value) }))}
+                    aria-label="Tamaño del texto de los anuncios"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.12em' }} className="uppercase block mb-2">
+                    Velocidad: {Number(form.announcementSpeed) || 24}s por vuelta
+                  </label>
+                  <input
+                    type="range"
+                    min={8}
+                    max={60}
+                    step={1}
+                    value={Number(form.announcementSpeed) || 24}
+                    onChange={e => setForm(f => ({ ...f, announcementSpeed: Number(e.target.value) }))}
+                    aria-label="Velocidad de desplazamiento; menos segundos significa más rápido"
+                    className="w-full"
+                  />
+                  <span style={{ color: '#aaa', fontSize: '0.68rem' }}>Menos segundos = más rápido</span>
+                </div>
+                <div>
+                  <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.12em' }} className="uppercase block mb-2">Tipografía</label>
+                  <select
+                    value={form.announcementFontFamily ?? 'system-ui, sans-serif'}
+                    onChange={e => setForm(f => ({ ...f, announcementFontFamily: e.target.value }))}
+                    style={{ width: '100%', border: '1px solid rgba(0,0,0,0.12)', padding: '10px 12px', fontSize: '0.85rem', background: '#F5F0E8', color: '#1a1a1a', outline: 'none', cursor: 'pointer' }}
+                  >
+                    <option value="system-ui, sans-serif">Sistema</option>
+                    <option value="Arial, sans-serif">Arial</option>
+                    <option value="Georgia, serif">Georgia</option>
+                    <option value='"Cormorant Garamond", Georgia, serif'>Cormorant Garamond</option>
+                  </select>
+                </div>
+              </div>
 
               <div className="flex flex-wrap items-center gap-4 mt-4">
                 <button

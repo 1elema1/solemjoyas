@@ -101,6 +101,11 @@ export interface HomeContent {
   footerCopyright: string;
   carouselImages?: string[];
   announcements?: string[];
+  announcementBgColor?: string;
+  announcementTextColor?: string;
+  announcementFontSize?: number;
+  announcementSpeed?: number;
+  announcementFontFamily?: string;
   socialLinks?: SocialLinks;
   featuredProductIds?: string[];
 }
@@ -207,6 +212,11 @@ const DEFAULT_HOME_CONTENT: HomeContent = {
   carouselTitle: 'Inspiración',
   carouselSubtitle: 'Descubrí nuestras piezas',
   carouselImages: [],
+  announcementBgColor: '#1a1a1a',
+  announcementTextColor: '#F5F0E8',
+  announcementFontSize: 11,
+  announcementSpeed: 24,
+  announcementFontFamily: 'system-ui, sans-serif',
   footerLocation: 'Ubicados en\nCórdoba Capital',
   footerShipping: 'Realizamos envíos\nmediante Uber Envíos',
   footerMaterial: 'Plata 925\ncertificada y garantizada',
