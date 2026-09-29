@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ShoppingBag, X, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useStore, Product, CATEGORIES, getProductPrice } from '../context/StoreContext';
+import { useStore, Product, getProductPrice } from '../context/StoreContext';
 import { SmartImage } from './ui/SmartImage';
 import { useNavigate } from 'react-router-dom';
 
@@ -469,7 +469,7 @@ function ProductCardSkeleton() {
 
 // ── Main grid ─────────────────────────────────────────────────────────────────
 export function ProductGrid() {
-  const { clientProducts, selectedCategory, setSelectedCategory, searchQuery, loading } = useStore();
+  const { clientProducts, categories, selectedCategory, setSelectedCategory, searchQuery, loading } = useStore();
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState<string | null>(selectedCategory);
   const [limit, setLimit] = useState(20);
@@ -546,7 +546,7 @@ export function ProductGrid() {
           style={{ borderTop: '1px solid rgba(0,0,0,0.1)', borderBottom: '1px solid rgba(0,0,0,0.1)' }}
           className="flex overflow-x-auto gap-8 py-4 mb-10"
         >
-          {[null, ...CATEGORIES].map(cat => (
+          {[null, ...categories].map(cat => (
             <button
               key={cat ?? 'all'}
               onClick={() => handleCategoryChange(cat ?? null)}

@@ -91,7 +91,7 @@ function SocialBtn({ href, icon, label }: { href: string; icon: React.ReactNode;
 
 // ── Main Hero ─────────────────────────────────────────────────────────────────
 export function Hero() {
-  const { setSelectedCategory, homeContent, clientProducts } = useStore();
+  const { setSelectedCategory, homeContent, clientProducts, categories } = useStore();
   const navigate = useNavigate();
 
   const goCategory = (cat: string) => { setSelectedCategory(cat); navigate('/products'); };
@@ -136,8 +136,6 @@ export function Hero() {
 
   const socialLinks = homeContent.socialLinks ?? {};
   const hasSocial = Object.values(socialLinks).some(v => v && v.trim() !== '');
-
-  const CATEGORIES_DISPLAY = ['Anillos', 'Cadenas', 'Pulseras', 'Dijes', 'Huggies', 'Abridores', 'Argollas', 'Conjuntos'];
 
   return (
     <div style={{ backgroundColor: '#F5F0E8' }}>
@@ -249,7 +247,7 @@ export function Hero() {
               </div>
               <span style={{ color: '#1a1a1a', fontSize: '0.6rem', letterSpacing: '0.12em' }} className="uppercase">Todo</span>
             </button>
-            {CATEGORIES_DISPLAY.map(cat => (
+            {categories.map(cat => (
               <CategoryChip
                 key={cat}
                 label={cat}

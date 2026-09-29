@@ -107,6 +107,8 @@ export interface HomeContent {
 
 interface StoreContextType {
   products: Product[];
+  categories: string[];
+  addCategory: (name: string) => Promise<void>;
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   updateProduct: (id: string, updates: Partial<Omit<Product, 'id'>>) => Promise<void>;
@@ -215,6 +217,7 @@ const DEFAULT_HOME_CONTENT: HomeContent = {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const isSdkSyncedRef = useRef(false);
   const [products, setProducts] = useState<Product[]>(() => loadFromStorage('solem_products_cache', []));
+  const [categories, setCategories] = useState<string[]>(() => loadFromStorage('solem_categories_cache', [...CATEGORIES]));
   const [cart, setCart] = useState<CartItem[]>(() => loadFromStorage('solem_cart_v2', []));
   const [user, setUser] = useState<User | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -309,6 +312,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('solem_products_updated', handleProductsUpdate);
       window.removeEventListener('solem_home_updated', handleHomeUpdate);
     };
+  }, []);
+
+  // Sync de categorías desde Firestore, con respaldo en las categorías iniciales.
+  useEffect(() => {
+    const unsubscribe = onSnapshot(query(collection(db, 'categories')), (snapshot) => {
+      const names = snapshot.docs
+        .map(docSnap => String(docSnap.data().name ?? '').trim())
+        .filter(Boolean);
+      const next = [...new Set([...CATEGORIES, ...names])];
+      setCategories(next);
+      localStorage.setItem('solem_categories_cache', JSON.stringify(next));
+    }, (error) => {
+      console.warn('Firestore onSnapshot error (categories):', error);
+    });
+    return () => unsubscribe();
   }, []);
 
   // Sync homeContent desde Firestore (fuente única de verdad, incluye carouselImages y announcements)
@@ -517,6 +535,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // Categorías - Acciones del lado admin
+  const addCategory = async (name: string) => {
+    const cleanName = name.trim().replace(/\s+/g, ' ');
+    if (!cleanName) throw new Error('Escribí un nombre para la categoría');
+    if (categories.some(category => category.toLocaleLowerCase('es-AR') === cleanName.toLocaleLowerCase('es-AR'))) {
+      throw new Error('Ya existe una categoría con ese nombre');
+    }
+    await addDoc(collection(db, 'categories'), { name: cleanName });
+  };
+
   // Cupones - Acciones del lado cliente y admin
   const addCoupon = async (coupon: Omit<Coupon, 'id'>) => {
     const clean = {
@@ -582,7 +610,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // useMemo en el value evita que todos los consumidores re-rendericen
   // cuando cambia un estado no relacionado (ej: cartOpen no afecta a ProductGrid)
   const value = useMemo<StoreContextType>(() => ({
-    products, addProduct, deleteProduct, updateProduct, toggleActive, clientProducts,
+    products, categories, addCategory, addProduct, deleteProduct, updateProduct, toggleActive, clientProducts,
     cart, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount,
     cartOpen, setCartOpen,
     currentView, setCurrentView, selectedCategory, setSelectedCategory,
@@ -595,7 +623,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     applyBulkPriceChange,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [
-    products, clientProducts, cart, cartTotal, cartCount,
+    products, categories, clientProducts, cart, cartTotal, cartCount,
     cartOpen, currentView, selectedCategory,
     user, searchQuery, carouselImages, loading, authLoading, homeContent,
     coupons, appliedCoupon, cartDiscount, cartFinalTotal,
