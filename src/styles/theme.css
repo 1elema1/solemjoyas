@@ -218,6 +218,7 @@
 
 /* ── Carruseles ─────────────────────────────────────────────────────────────── */
 .category-carousel-track {
+  min-width: 0;
   scrollbar-width: none;
   scroll-behavior: smooth;
 }
