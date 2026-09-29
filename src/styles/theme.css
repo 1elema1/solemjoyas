@@ -221,6 +221,8 @@
   min-width: 0;
   scrollbar-width: none;
   scroll-behavior: smooth;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
 }
 .category-carousel-track::-webkit-scrollbar {
   display: none;
