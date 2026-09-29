@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { SmartImage } from './ui/SmartImage';
 import { useNavigate } from 'react-router-dom';
-import { Instagram, Music2, MessageCircle, Facebook, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Instagram, Music2, MessageCircle, Facebook, ArrowRight, ChevronRight } from 'lucide-react';
 
 // ── Mini product card for featured section ────────────────────────────────────
 function FeaturedCard({ product, priority }: { product: { id: string; name: string; price: number; image: string; images?: string[] }; priority?: boolean }) {
@@ -95,8 +95,8 @@ export function Hero() {
   const navigate = useNavigate();
 
   const categoryTrackRef = useRef<HTMLDivElement>(null);
-  const scrollCategories = (direction: -1 | 1) => {
-    categoryTrackRef.current?.scrollBy({ left: direction * 420, behavior: 'smooth' });
+  const scrollCategories = () => {
+    categoryTrackRef.current?.scrollBy({ left: 320, behavior: 'smooth' });
   };
 
   const goCategory = (cat: string) => { setSelectedCategory(cat); navigate('/products'); };
@@ -237,14 +237,6 @@ export function Hero() {
       {/* ── Categorías scrollables ── */}
       <section style={{ borderBottom: '1px solid rgba(0,0,0,0.07)', backgroundColor: '#F5F0E8' }} className="py-6 px-6">
         <div className="max-w-7xl mx-auto flex items-center gap-3">
-          <button
-            type="button"
-            aria-label="Ver categorías anteriores"
-            onClick={() => scrollCategories(-1)}
-            style={{ flex: '0 0 36px', width: '36px', height: '36px', border: '1px solid rgba(0,0,0,0.15)', borderRadius: '50%', background: 'transparent', color: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-          >
-            <ChevronLeft size={18} />
-          </button>
           <div ref={categoryTrackRef} className="category-carousel-track flex flex-1 items-center gap-6 overflow-x-auto pb-1">
             <button
               onClick={goAll}
@@ -271,11 +263,11 @@ export function Hero() {
           </div>
           <button
             type="button"
-            aria-label="Ver más categorías"
-            onClick={() => scrollCategories(1)}
-            style={{ flex: '0 0 36px', width: '36px', height: '36px', border: '1px solid rgba(0,0,0,0.15)', borderRadius: '50%', background: 'transparent', color: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            aria-label="Deslizar categorías hacia la derecha"
+            onClick={scrollCategories}
+            style={{ flex: '0 0 28px', width: '28px', height: '28px', border: '1px solid rgba(0,0,0,0.15)', borderRadius: '50%', background: 'transparent', color: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
           >
-            <ChevronRight size={18} />
+            <ChevronRight size={14} />
           </button>
         </div>
       </section>
