@@ -353,6 +353,10 @@ function HomeContentManager() {
   const { homeContent, updateHomeContent, carouselImages, categories } = useStore();
   const [form, setForm] = useState(homeContent);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setForm(homeContent);
+  }, [homeContent]);
   const [activeSection, setActiveSection] = useState<'hero' | 'categories' | 'footer' | 'announcements' | 'social'>('hero');
 
   const handleSave = async () => {
@@ -640,10 +644,10 @@ function HomeContentManager() {
           <div className="flex flex-col gap-6">
             <div>
               <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.15em' }} className="uppercase block mb-2">
-                Anuncios en barra superior (Marquesina infinita)
+                Anuncios debajo de la navegación (carrusel)
               </label>
               <p style={{ color: '#aaa', fontSize: '0.7rem', marginBottom: '14px' }}>
-                Estos mensajes se mostrarán en la parte superior de la página, rotando de forma continua.
+                Estos mensajes aparecerán debajo del encabezado y avanzarán automáticamente.
               </p>
 
               <div className="flex flex-col gap-3 mb-4">
