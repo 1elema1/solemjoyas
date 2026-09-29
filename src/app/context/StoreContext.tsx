@@ -320,7 +320,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const names = snapshot.docs
         .map(docSnap => String(docSnap.data().name ?? '').trim())
         .filter(Boolean);
-      const next = names.length ? [...new Set(names)] : [...CATEGORIES];
+      const next = [...new Set([...CATEGORIES, ...names])];
       setCategories(next);
       localStorage.setItem('solem_categories_cache', JSON.stringify(next));
     }, (error) => {
@@ -537,7 +537,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Categorías - Acciones del lado admin
   const addCategory = async (name: string) => {
-    const cleanName = name.trim().replace(/\\s+/g, ' ');
+    const cleanName = name.trim().replace(/\s+/g, ' ');
     if (!cleanName) throw new Error('Escribí un nombre para la categoría');
     if (categories.some(category => category.toLocaleLowerCase('es-AR') === cleanName.toLocaleLowerCase('es-AR'))) {
       throw new Error('Ya existe una categoría con ese nombre');
