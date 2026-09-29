@@ -5,12 +5,10 @@ import { useState } from 'react';
 import { SearchBar } from './SearchBar';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-const CATEGORIES = ['Anillos', 'Cadenas', 'Pulseras', 'Dijes', 'Huggies', 'Abridores', 'Argollas', 'Conjuntos'];
-
 export function Navbar() {
   const {
     cartCount, setCartOpen, user, adminLogout,
-    setSelectedCategory,
+    categories, setSelectedCategory,
     searchQuery, setSearchQuery
   } = useStore();
   const navigate = useNavigate();
@@ -54,7 +52,7 @@ export function Navbar() {
                   style={{ backgroundColor: '#F5F0E8', border: '1px solid rgba(0,0,0,0.08)', top: '100%', left: 0 }}
                   className="absolute mt-2 rounded shadow-lg py-2 min-w-40 z-50"
                 >
-                  {CATEGORIES.map(cat => (
+                  {categories.map(cat => (
                     <button
                       key={cat}
                       onClick={() => handleCategoryClick(cat)}
@@ -156,7 +154,7 @@ export function Navbar() {
         {location.pathname !== '/products' && (
           <div className="overflow-x-auto md:hidden">
             <div className="flex px-4 pb-2 gap-4 w-max">
-              {CATEGORIES.map(cat => (
+              {categories.map(cat => (
                 <button
                   key={cat}
                   onClick={() => handleCategoryClick(cat)}
