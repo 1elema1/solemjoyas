@@ -353,6 +353,8 @@ function HomeContentManager() {
   const { homeContent, updateHomeContent, carouselImages, categories } = useStore();
   const [form, setForm] = useState(homeContent);
   const [saved, setSaved] = useState(false);
+  const [announcementSaving, setAnnouncementSaving] = useState(false);
+  const [announcementMessage, setAnnouncementMessage] = useState('');
 
   useEffect(() => {
     setForm(homeContent);
@@ -366,6 +368,20 @@ function HomeContentManager() {
       setTimeout(() => setSaved(false), 2000);
     } catch (e) {
       console.error('Error al guardar contenido del home:', e);
+    }
+  };
+
+  const handleSaveAnnouncements = async () => {
+    setAnnouncementSaving(true);
+    setAnnouncementMessage('');
+    try {
+      await updateHomeContent({ announcements: form.announcements ?? [] });
+      setAnnouncementMessage('Anuncios guardados correctamente.');
+    } catch (error) {
+      console.error('Error al guardar anuncios:', error);
+      setAnnouncementMessage('No se pudieron guardar los anuncios. Intentá nuevamente.');
+    } finally {
+      setAnnouncementSaving(false);
     }
   };
 
@@ -697,6 +713,23 @@ function HomeContentManager() {
               >
                 + Agregar anuncio
               </button>
+
+              <div className="flex flex-wrap items-center gap-4 mt-4">
+                <button
+                  type="button"
+                  onClick={handleSaveAnnouncements}
+                  disabled={announcementSaving}
+                  style={{ backgroundColor: '#1a1a1a', color: '#F5F0E8', fontSize: '0.65rem', letterSpacing: '0.15em', padding: '11px 18px', border: 'none', cursor: announcementSaving ? 'wait' : 'pointer', opacity: announcementSaving ? 0.65 : 1 }}
+                  className="uppercase"
+                >
+                  {announcementSaving ? 'Guardando…' : 'Guardar anuncios'}
+                </button>
+                {announcementMessage && (
+                  <p role="status" style={{ color: announcementMessage.startsWith('No ') ? '#c0392b' : '#6B8F71', fontSize: '0.75rem' }}>
+                    {announcementMessage}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )}
