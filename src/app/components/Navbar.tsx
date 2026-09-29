@@ -136,7 +136,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile categories bar + search */}
+      {/* Mobile search */}
       <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }} className="lg:hidden">
         <div className="px-4 py-3">
           <SearchBar
@@ -151,22 +151,7 @@ export function Navbar() {
             onClear={() => setSearchQuery('')}
           />
         </div>
-        {location.pathname !== '/products' && (
-          <div className="overflow-x-auto md:hidden">
-            <div className="flex px-4 pb-2 gap-4 w-max">
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => handleCategoryClick(cat)}
-                  style={{ color: '#1a1a1a', fontSize: '0.7rem', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}
-                  className="uppercase"
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+
       </div>
 
       {menuOpen && <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />}
