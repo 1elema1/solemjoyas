@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ShoppingBag, X, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useStore, Product, CATEGORIES, getProductPrice } from '../context/StoreContext';
+import { useStore, Product, getProductPrice } from '../context/StoreContext';
 import { SmartImage } from './ui/SmartImage';
 import { useNavigate } from 'react-router-dom';
 
