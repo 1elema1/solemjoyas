@@ -34,7 +34,7 @@ export function AnnouncementBar() {
     observer.observe(marquee);
     observer.observe(firstGroup);
     return () => observer.disconnect();
-  }, [messages.join('|'), homeContent.announcementFontSize]);
+  }, [messages.join('|'), homeContent.announcementFontSize, homeContent.announcementFontFamily]);
 
   const textColor = homeContent.announcementTextColor || '#F5F0E8';
   const backgroundColor = homeContent.announcementBgColor || '#1a1a1a';
