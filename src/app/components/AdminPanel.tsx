@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, ArrowLeft, Minus, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, AlertCircle, CheckCircle2, Edit2, LogOut } from 'lucide-react';
-import { useStore, Product, Variant, ColorVariant, hasStock, CATEGORIES, getProductPrice } from '../context/StoreContext';
+import { useStore, Product, Variant, ColorVariant, hasStock, getProductPrice } from '../context/StoreContext';
 import { ImageUpload } from './ImageUpload';
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
@@ -350,7 +350,7 @@ function ColorBuilder({ colors, onChange }: { colors: ColorVariant[]; onChange: 
 
 // ── Home content manager ──────────────────────────────────────────────────────
 function HomeContentManager() {
-  const { homeContent, updateHomeContent, carouselImages } = useStore();
+  const { homeContent, updateHomeContent, carouselImages, categories } = useStore();
   const [form, setForm] = useState(homeContent);
   const [saved, setSaved] = useState(false);
   const [activeSection, setActiveSection] = useState<'hero' | 'categories' | 'footer' | 'announcements' | 'social'>('hero');
@@ -480,7 +480,7 @@ function HomeContentManager() {
                 onChange={e => setForm(f => ({ ...f, heroButton2Category: e.target.value }))}
                 style={{ width: '100%', border: '1px solid rgba(0,0,0,0.12)', padding: '10px 12px', fontSize: '0.85rem', background: '#F5F0E8', color: '#1a1a1a', outline: 'none', cursor: 'pointer' }}
               >
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
 
@@ -536,11 +536,11 @@ function HomeContentManager() {
             <div>
               <label style={{ color: '#888', fontSize: '0.65rem', letterSpacing: '0.15em' }} className="uppercase block mb-3">Imágenes de portada por categoría</label>
               <div className="flex flex-col gap-4">
-                {Object.keys(form.categoryImages).map(cat => (
+                {categories.map(cat => (
                   <div key={cat} style={{ border: '1px solid rgba(0,0,0,0.1)', padding: '12px' }}>
                     <p style={{ color: '#555', fontSize: '0.8rem', marginBottom: '8px', fontWeight: 500 }}>{cat}</p>
                     <ImageUpload
-                      value={form.categoryImages[cat]}
+                      value={form.categoryImages[cat] ?? ''}
                       onChange={url => updateCategoryImage(cat, url)}
                       label={`Cambiar imagen de ${cat}`}
                     />
@@ -791,7 +791,7 @@ function CarouselManager() {
 
 // ── Bulk price manager ────────────────────────────────────────────────────────
 function BulkPriceManager() {
-  const { applyBulkPriceChange } = useStore();
+  const { applyBulkPriceChange, categories } = useStore();
   const [category, setCategory] = useState<string>('all');
   const [action, setAction] = useState<'increase' | 'discount'>('increase');
   const [type, setType] = useState<'percentage' | 'fixed'>('percentage');
@@ -852,7 +852,7 @@ function BulkPriceManager() {
             style={{ width: '100%', border: '1px solid rgba(0,0,0,0.12)', padding: '10px 12px', fontSize: '0.85rem', background: '#F5F0E8', color: '#1a1a1a', outline: 'none', cursor: 'pointer' }}
           >
             <option value="all">Todas las categorías</option>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
 
@@ -1096,7 +1096,66 @@ function CouponsManager() {
   );
 }
 
-// Constante fuera del componente para evitar recreación en cada render
+function CategoryManager({ categories, onAdd, onAdded }: { categories: string[]; onAdd: (name: string) => Promise<void>; onAdded: () => void }) {
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSaving(true);
+    try {
+      await onAdd(name);
+      setName('');
+      onAdded();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar la categoría');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="max-w-xl">
+      <h2 style={{ fontFamily: '"Cormorant Garamond","Georgia",serif', fontSize: '1.7rem', color: '#1a1a1a', fontWeight: 300, marginBottom: '8px' }}>
+        Categorías de productos
+      </h2>
+      <p style={{ color: '#888', fontSize: '0.82rem', marginBottom: '24px' }}>
+        Las categorías nuevas aparecerán en la tienda y estarán disponibles al publicar productos.
+      </p>
+      <form onSubmit={handleAdd} className="flex gap-3 mb-8">
+        <input
+          type="text"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="Ej: Collares"
+          maxLength={40}
+          required
+          style={{ flex: 1, border: '1px solid rgba(0,0,0,0.12)', padding: '11px 14px', fontSize: '0.88rem', background: 'transparent', color: '#1a1a1a', outline: 'none' }}
+        />
+        <button
+          type="submit"
+          disabled={saving}
+          style={{ backgroundColor: '#1a1a1a', color: '#F5F0E8', fontSize: '0.68rem', letterSpacing: '0.15em', padding: '11px 18px', border: 'none', cursor: saving ? 'wait' : 'pointer', opacity: saving ? 0.65 : 1 }}
+          className="uppercase flex items-center gap-2"
+        >
+          <Plus size={14} /> {saving ? 'Guardando…' : 'Agregar'}
+        </button>
+      </form>
+      {error && <p role="alert" style={{ color: '#c0392b', fontSize: '0.78rem', marginBottom: '16px' }}>{error}</p>}
+      <div className="flex flex-wrap gap-2">
+        {categories.map(category => (
+          <span key={category} style={{ background: 'rgba(107,143,113,0.1)', color: '#526f57', padding: '8px 12px', fontSize: '0.72rem', letterSpacing: '0.04em' }}>
+            {category}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Constante fuera del componente para evitar recreación en cada render
 const EMPTY_FORM = {
   name: '',
   price: '',
@@ -1111,8 +1170,8 @@ const EMPTY_FORM = {
 // ── Main AdminPanel ───────────────────────────────────────────────────────────
 export function AdminPanel() {
   const navigate = useNavigate();
-  const { products, addProduct, updateProduct, adminLogout } = useStore();
-  const [activeTab, setActiveTab] = useState<'list' | 'add' | 'edit' | 'carousel' | 'home' | 'prices' | 'coupons'>('list');
+  const { products, categories, addCategory, addProduct, updateProduct, adminLogout } = useStore();
+  const [activeTab, setActiveTab] = useState<'list' | 'add' | 'edit' | 'carousel' | 'home' | 'prices' | 'coupons' | 'categories'>('list');
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
@@ -1258,7 +1317,7 @@ export function AdminPanel() {
 
           {/* Tabs */}
           <div style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }} className="flex gap-8 mb-10 overflow-x-auto whitespace-nowrap">
-            {([['list', `Productos (${products.length})`], ['add', 'Agregar producto'], ['home', 'Contenido Home'], ['carousel', 'Carrusel'], ['prices', 'Precios masivos'], ['coupons', 'Cupones']] as const).map(([tab, label]) => (
+            {([['list', `Productos (${products.length})`], ['add', 'Agregar producto'], ['categories', 'Categorías'], ['home', 'Contenido Home'], ['carousel', 'Carrusel'], ['prices', 'Precios masivos'], ['coupons', 'Cupones']] as const).map(([tab, label]) => (
               <button
                 key={tab}
                 onClick={() => {
@@ -1299,7 +1358,7 @@ export function AdminPanel() {
           {activeTab === 'list' && (
             <div>
               <div className="flex flex-wrap gap-2 mb-8">
-                {[null, ...CATEGORIES].map(cat => (
+                {[null, ...categories].map(cat => (
                   <button
                     key={cat ?? 'all'}
                     onClick={() => setFilterCat(cat ?? null)}
@@ -1371,7 +1430,7 @@ export function AdminPanel() {
                     onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
                     style={{ width: '100%', border: '1px solid rgba(0,0,0,0.12)', padding: '11px 14px', fontSize: '0.88rem', background: '#F5F0E8', color: '#1a1a1a', outline: 'none', cursor: 'pointer' }}
                   >
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
               </div>
@@ -1458,6 +1517,8 @@ export function AdminPanel() {
               </div>
             </form>
           )}
+
+          {activeTab === 'categories' && <CategoryManager categories={categories} onAdd={addCategory} onAdded={() => setToast('Categoría agregada exitosamente')} />}
 
           {activeTab === 'home' && <HomeContentManager />}
 
