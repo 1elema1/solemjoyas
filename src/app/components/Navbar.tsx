@@ -3,6 +3,7 @@ import { useStore } from '../context/StoreContext';
 import logo from '../../imports/Photoroom_20250815_205827.PNG';
 import { useState } from 'react';
 import { SearchBar } from './SearchBar';
+import { AnnouncementBar } from './AnnouncementBar';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export function Navbar() {
@@ -151,7 +152,7 @@ export function Navbar() {
             onClear={() => setSearchQuery('')}
           />
         </div>
-
+        <AnnouncementBar />
       </div>
 
       {menuOpen && <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />}
