@@ -1,25 +1,35 @@
+import { useEffect, useState } from 'react';
 import { useStore } from '../context/StoreContext';
 
 export function AnnouncementBar() {
   const { homeContent } = useStore();
-  
-  // Limpiamos los anuncios para quitar textos vacíos y asegurar que tengamos al menos un anuncio válido
-  const rawAnnouncements = homeContent.announcements || [];
-  const validAnnouncements = rawAnnouncements.filter(txt => txt && txt.trim() !== '');
-
-  const announcements = validAnnouncements.length > 0
-    ? validAnnouncements
+  const announcements = (homeContent.announcements || [])
+    .map(text => text.trim())
+    .filter(Boolean);
+  const messages = announcements.length > 0
+    ? announcements
     : [
-        "✨ 3 CUOTAS SIN INTERÉS EN TODA LA TIENDA ✨",
-        "🚚 ENVÍOS GRATIS EN CÓRDOBA SUPERANDO $50.000 🚚",
-        "💖 JOYAS ÚNICAS EN PLATA 925 HECHAS A MANO 💖"
+        '✨ 3 CUOTAS SIN INTERÉS EN TODA LA TIENDA ✨',
+        '🚚 ENVÍOS GRATIS EN CÓRDOBA SUPERANDO $50.000 🚚',
+        '💖 JOYAS ÚNICAS EN PLATA 925 HECHAS A MANO 💖',
       ];
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  // Triplicamos la lista para garantizar un loop infinito sin saltos ni espacios vacíos
-  const repeatedAnnouncements = [...announcements, ...announcements, ...announcements];
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [messages.join('|')]);
+
+  useEffect(() => {
+    if (messages.length < 2) return;
+    const timer = window.setInterval(() => {
+      setActiveIndex(index => (index + 1) % messages.length);
+    }, 4000);
+    return () => window.clearInterval(timer);
+  }, [messages.length]);
 
   return (
     <div
+      aria-label="Anuncios de la tienda"
       style={{
         backgroundColor: '#1a1a1a',
         color: '#F5F0E8',
@@ -32,10 +42,13 @@ export function AnnouncementBar() {
         borderBottom: '1px solid rgba(255,255,255,0.05)',
       }}
     >
-      <div className="marquee-container">
-        {repeatedAnnouncements.map((text, idx) => (
-          <div key={idx} className="marquee-item">
-            {text}
+      <div
+        className="announcement-carousel-track"
+        style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+      >
+        {messages.map((message, index) => (
+          <div className="announcement-carousel-slide" key={`${index}-${message}`}>
+            {message}
           </div>
         ))}
       </div>

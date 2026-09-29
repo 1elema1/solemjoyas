@@ -22,8 +22,8 @@ function MainLayout({ children }: { children: React.ReactNode }) {
       display: 'flex',
       flexDirection: 'column'
     }}>
-      <AnnouncementBar />
       <Navbar />
+      <AnnouncementBar />
       <main style={{ flex: 1 }}>
         {children}
       </main>
