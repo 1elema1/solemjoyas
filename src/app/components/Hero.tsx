@@ -147,7 +147,7 @@ export function Hero() {
 
       {/* ── Hero 50/50 compacto ── */}
       <section style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-        <div className="grid md:grid-cols-2" style={{ minHeight: '65vh' }}>
+        <div className="grid md:grid-cols-2">
           {/* Left — texto */}
           <div className="flex flex-col justify-center px-8 md:px-14 lg:px-20 py-14">
             <p
@@ -209,7 +209,7 @@ export function Hero() {
           </div>
 
           {/* Right — imagen hero */}
-          <div className="relative hidden md:block" style={{ overflow: 'hidden' }}>
+          <div className="relative hidden md:block" style={{ overflow: 'hidden', height: 'clamp(380px, 58vh, 560px)' }}>
             <SmartImage
               src={homeContent.heroImage}
               alt="Joya SOLEM"
