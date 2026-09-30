@@ -7,11 +7,12 @@ import { ProductGrid } from './components/ProductGrid';
 import { CartDrawer } from './components/CartDrawer';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AnnouncementBar } from './components/AnnouncementBar';
+import { AccessibilityWidget } from './components/AccessibilityWidget';
 
 const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })));
 const AdminLogin = lazy(() => import('./components/AdminLogin').then(m => ({ default: m.AdminLogin })));
 
-function MainLayout({ children }: { children: React.ReactNode }) {
+function MainLayout({ children, showAccessibility = true }: { children: React.ReactNode; showAccessibility?: boolean }) {
   return (
     <div style={{
       backgroundColor: '#F5F0E8',
@@ -28,6 +29,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <CartDrawer />
+      {showAccessibility && <AccessibilityWidget />}
     </div>
   );
 }
@@ -54,7 +56,7 @@ function AppContent() {
       } />
       <Route path="/admin" element={
         <ProtectedRoute>
-          <MainLayout>
+          <MainLayout showAccessibility={false}>
             <Suspense fallback={<div className="flex h-screen items-center justify-center">Cargando panel...</div>}>
               <AdminPanel />
             </Suspense>
