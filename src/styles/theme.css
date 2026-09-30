@@ -261,7 +261,7 @@
   flex: 0 0 auto;
   align-items: center;
   height: 100%;
-  padding: 0 2.5rem;
+  padding: 0;
   white-space: nowrap;
   font-size: inherit;
   font-weight: 500;
@@ -272,6 +272,7 @@
   color: currentColor;
   font-size: 1.25em;
   line-height: 1;
+  margin: 0 2rem;
 }
 .announcement-marquee-separator-image {
   display: block;
@@ -279,6 +280,7 @@
   width: 1.25em;
   height: 1.25em;
   object-fit: contain;
+  margin: 0 2rem;
 }
 @media (prefers-reduced-motion: reduce) {
   .announcement-marquee-track {
